@@ -48,13 +48,20 @@ namespace brq
     template< typename exc, typename... args_t >
     struct construct_error : string_builder
     {
+        bool _moved_from = false;
         std::tuple< args_t... > _args;
         construct_error( args_t... args ) : _args( args... ) {}
 
+        construct_error( construct_error &&other )
+            : _args( std::move( other._args ) )
+        {
+            other._moved_from = true;
+        }
+
         ~construct_error() noexcept( false )
         {
-            if ( std::uncaught_exceptions() )
-                return; /* terminate instead? */
+            if ( _moved_from || std::uncaught_exceptions() )
+                return; /* terminate if unwinding? */
             auto args = std::tuple_cat( _args, std::make_tuple( buffer() ) );
             std::apply( []( auto... a ) -> void { throw exc( a... ); }, args );
         }
