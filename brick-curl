@@ -28,6 +28,7 @@ namespace brq
         CURLU *_url = nullptr;
         curl_mime *_mime = nullptr;
         brq::string_builder _data;
+        int _response_code = 0;
 
         curl()
         {
@@ -50,6 +51,7 @@ namespace brq
         static size_t _data_cb( char *ptr, size_t, size_t nmemb, void *instance )
         {
             curl *i = static_cast< curl * >( instance );
+            i->check_code();
             i->_data << std::string_view( ptr, nmemb );
             return nmemb;
         }
@@ -124,6 +126,17 @@ namespace brq
             error( int c, const char *w ) : std::runtime_error( w ), code( c ) {}
         };
 
+        void check_code( bool raise = true )
+        {
+            if ( _response_code )
+                return;
+
+            auto code = _response_code = info< long >( CURLINFO_RESPONSE_CODE );
+
+            if ( raise && code != 200 )
+                brq::raise< brq::curl::error >( code ) << "unexpected server response code " << code;
+        }
+
         curl &run()
         {
             char *url;
@@ -131,17 +144,16 @@ namespace brq
             DEBUG( "request", url );
 
             curl_easy_setopt( _curl, CURLOPT_CURLU, _url );
+            _response_code = 0;
 
             if ( auto err = curl_easy_perform( _curl ) )
                 brq::raise< error >( 0 ) << "curl error: " << curl_easy_strerror( err );
 
-            auto code = info< long >( CURLINFO_RESPONSE_CODE );
-            DEBUG( "done", code, info< string >( CURLINFO_CONTENT_TYPE ),
+            DEBUG( "done", info< long >( CURLINFO_RESPONSE_CODE ),
+                           info< string >( CURLINFO_CONTENT_TYPE ),
                    "took", info< double >( CURLINFO_TOTAL_TIME ), "seconds" );
 
-            if ( code != 200 )
-                brq::raise< error >( code ) << "unexpected server response code " << code;
-
+            check_code();
             return *this;
         }
     };
