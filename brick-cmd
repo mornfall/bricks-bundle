@@ -68,7 +68,8 @@ namespace brq
             return {};
         }
 
-        explicit operator bool() const { return !name.empty(); }
+        bool valid() const { return !name.empty(); }
+        explicit operator bool() const { return valid(); }
     };
 
     /* A file or directory path which may or may not exist. */
