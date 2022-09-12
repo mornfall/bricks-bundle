@@ -220,6 +220,7 @@ namespace brq
         }
 
         char next() { return _chunk[ 0 ]; }
+
         void chomp( int count = 1 )
         {
             _chunk.remove_prefix( count );
@@ -268,6 +269,14 @@ namespace brq
             }
         }
 
+        auto error()
+        {
+            auto chunk = _chunk.substr( 0, 60 );
+            auto error = brq::raise< json_error >();
+            error << "parsing JSON chunk '" <<  chunk <<"': ";
+            return std::move( error );
+        }
+
         std::vector< std::string_view > scan_number()
         {
             for ( int i = 0; i < _chunk.size(); ++i )
@@ -282,7 +291,7 @@ namespace brq
                         else if ( std::isdigit( _chunk[ i ] ) )
                             next_state( read_digits_tail, false );
                         else
-                            brq::raise< json_error >() << "expected - or a digit";
+                            error() << "expected - or a digit at " << i;
                         _integer = true;
                         continue;
 
@@ -293,7 +302,7 @@ namespace brq
                         else if ( std::isdigit( _chunk[ i ] ) )
                             next_state( read_digits_tail, false );
                         else
-                            brq::raise< json_error >() << "expected a digit";
+                            error() << "expected a digit at " << i;
                         continue;
 
                     case read_digits_tail:
@@ -364,7 +373,7 @@ namespace brq
                         return;
 
                     if ( next() != '"' )
-                        raise< json_error >() << "expected \" (name)";
+                        error() << "expected \" (name)";
 
                     _chunk.remove_prefix( 1 );
 
@@ -382,7 +391,7 @@ namespace brq
                         return;
 
                     if ( next() != ':' )
-                        raise< json_error >() << "expected :";
+                        error() << "expected :";
 
                     chomp();
                     value();
@@ -397,7 +406,7 @@ namespace brq
         {
             ASSERT( !_stack.empty() );
             if ( _stack.back() != v )
-                raise< json_error >() << "mismatched ] vs }";
+                error() << "mismatched ] vs }";
             _stack.pop_back();
             chomp();
         }
@@ -412,7 +421,7 @@ namespace brq
                 case '}': pop( true );  _l.object_end(); return comma();
                 case ']': pop( false ); _l.array_end();  return comma();
                 case ',': chomp(); break;
-                default:  raise< json_error >() << "expected , or }";
+                default:  error() << "expected , or }";
             }
 
             if ( _stack.empty() )
@@ -458,7 +467,7 @@ namespace brq
                     if      ( w == "true" ) _l.boolean( true );
                     else if ( w == "false" ) _l.boolean( false );
                     else if ( w == "null" ) _l.null();
-                    else raise< json_error >() << "unexpected bareword " << w;
+                    else error() << "unexpected bareword " << w;
 
                     if ( !_stack.empty() )
                         comma();
@@ -502,7 +511,7 @@ namespace brq
                         number();
                     }
                     else
-                        raise< json_error >() << "unexpected character " << next();
+                        error() << "unexpected character " << next();
             }
 
             if ( !_stack.empty() && !_chunk.empty() )
