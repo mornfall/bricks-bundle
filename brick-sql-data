@@ -417,6 +417,9 @@ namespace brq::sql
     {
         using type = std::optional< typename col::type >;
         static constexpr bool is_nullable = true;
+
+        template< typename CT >
+        static std::string_view get_name( const CT & ) { return col::get_name( col() ); }
     };
 
     template< typename T >
