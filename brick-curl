@@ -122,8 +122,8 @@ namespace brq
 
         struct error : std::runtime_error
         {
-            int code;
-            error( int c, const char *w ) : std::runtime_error( w ), code( c ) {}
+            int code, curl;
+            error( int co, int cu, const char *w ) : std::runtime_error( w ), code( co ), curl( cu ) {}
         };
 
         void check_code( bool raise = true )
@@ -134,7 +134,7 @@ namespace brq
             auto code = _response_code = info< long >( CURLINFO_RESPONSE_CODE );
 
             if ( raise && code != 200 )
-                brq::raise< brq::curl::error >( code ) << "unexpected server response code " << code;
+                brq::raise< brq::curl::error >( code, 0 ) << "unexpected server response code " << code;
         }
 
         curl &run()
@@ -147,7 +147,7 @@ namespace brq
             _response_code = 0;
 
             if ( auto err = curl_easy_perform( _curl ) )
-                brq::raise< error >( 0 ) << "curl error: " << curl_easy_strerror( err );
+                brq::raise< error >( 0, err ) << "curl error: " << curl_easy_strerror( err );
 
             DEBUG( "done", info< long >( CURLINFO_RESPONSE_CODE ),
                            info< string >( CURLINFO_CONTENT_TYPE ),
