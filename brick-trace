@@ -155,14 +155,20 @@ namespace brq
         rules_t _rules;
         bool _print_tid = false, _print_location = false, _use_syslog = false, _use_buffer = false;
         string_builder _syslog_meta;
-        string_builder _buffer;
 
         void use_syslog( bool s = true, std::string_view meta = "" )
         {
+            free( _syslog_meta );
+            _syslog_meta = nullptr;
             _use_syslog = s;
-            _syslog_meta.clear();
-            if ( !meta.empty() )
-                _syslog_meta << meta << " ";
+
+            if ( s )
+            {
+                _syslog_meta = reinterpret_cast< char * >( std::malloc( meta.size() + 1 ) );
+                memcpy( _syslog_meta, meta.data(), meta.size() );
+                _syslog_meta[ meta.size() ] = 0;
+                ::openlog( _syslog_meta, LOG_NDELAY, facility );
+            }
         }
 
         void use_buffer( bool s = true )
@@ -277,8 +283,7 @@ namespace brq
             b << "\n";
 #ifdef __unix__
             if ( _use_syslog )
-                ::syslog( level > trace_level::error ? LOG_DEBUG : LOG_INFO,
-                          "%s%s", _syslog_meta.buffer(), b.buffer() );
+                ::syslog( level > 0 ? LOG_DEBUG : LOG_INFO, "%s%s", _syslog_meta.buffer(), b.buffer() );
             else
                 ::write( 2, b.buffer(), b.size() );
 #else
