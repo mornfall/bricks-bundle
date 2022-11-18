@@ -620,13 +620,26 @@ namespace brq::sql
             ~savepoint()
             {
                 DEBUG( "~savepoint", std::uncaught_exceptions() );
+
+                if ( !_txn )
+                    return;
+
                 if ( std::uncaught_exceptions() )
                     rollback();
+                else
+                    release();
             }
 
             void rollback()
             {
                 _txn->exec( brq::format( "rollback to savepoint ", _name ).buffer() );
+                _txn = nullptr;
+            }
+
+            void release()
+            {
+                _txn->exec( brq::format( "release savepoint ", _name ).buffer() );
+                _txn = nullptr;
             }
         };
 
