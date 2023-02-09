@@ -5,6 +5,20 @@
 
 namespace brq::numeric
 {
+    template< typename type > struct is_integral : std::is_integral< type > {};
+    template<> struct is_integral< __uint128_t > : std::true_type {};
+    template<> struct is_integral< __int128_t >  : std::true_type {};
+
+    template< typename type >
+    constexpr bool is_integral_v = is_integral< type >::value;
+
+    template< typename type > struct make_unsigned : std::make_signed< type > {};
+    template<> struct make_unsigned< __uint128_t > { using type = __uint128_t; };
+    template<> struct make_unsigned< __int128_t >  { using type = __int128_t; };
+
+    template< typename type >
+    using make_unsigned_t = typename make_unsigned< type >::type;
+
     template< template< typename > class alloc_t = std_malloc_with_size >
     struct nat
     {
@@ -75,11 +89,12 @@ namespace brq::numeric
         }
 
         template< typename int_t = digit_t,
-                  typename = std::enable_if_t< std::is_integral_v< int_t > > >
+                  typename = std::enable_if_t< is_integral_v< int_t > > >
         nat( int_t n = 0 )
         {
             ASSERT_LEQ( 0, n );
-            std::make_unsigned_t< int_t > conv = n;
+
+            make_unsigned_t< int_t > conv = n;
 
             if ( conv < short_max )
                 set_short( conv );
