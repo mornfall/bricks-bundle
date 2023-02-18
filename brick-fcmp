@@ -1,0 +1,112 @@
+#pragma once
+#include <brick-assert>
+#include <brick-string>
+
+namespace brq
+{
+    template< typename... args_t >
+    struct fcmp_input
+    {
+        std::tuple< args_t... > args;
+    };
+
+    bool except_type_eq( std::exception_ptr a_ptr, std::exception_ptr b_ptr )
+    {
+        if ( !a_ptr && !b_ptr )
+            return true;
+        if ( !a_ptr || !b_ptr )
+            return false;
+
+        try
+        {
+            std::rethrow_exception( a_ptr );
+        }
+        catch ( std::exception &a )
+        {
+            try
+            {
+                std::rethrow_exception( b_ptr );
+            }
+            catch ( std::exception &b )
+            {
+                return typeid( a ) == typeid( b );
+            }
+        }
+    }
+
+    struct fcmp_base
+    {
+        virtual bool is_match() const = 0;
+        explicit operator bool() const { return is_match(); }
+    };
+
+    template< typename retval_t, typename... args_t >
+    struct fcmp_result : fcmp_base
+    {
+        fcmp_input< args_t... > input;
+        std::tuple< args_t... > f_args, g_args;
+        retval_t f_retval, g_retval;
+        std::optional< int > timeout;
+        std::exception_ptr f_except, g_except;
+
+        bool is_match() const override
+        {
+            return f_args == g_args &&
+                   f_retval == g_retval &&
+                   !timeout.has_value() &&
+                   except_type_eq( f_except, g_except );
+        }
+
+        friend brq::string_builder &operator<<( brq::string_builder &b, const fcmp_result &r )
+        {
+            b << "\n";
+            b << "input arguments: " << r.input.args << "\n";
+
+            if ( r.f_args != r.g_args )
+            {
+                b << "output arguments:\n"
+                  << "  expected: " << r.f_args << "\n"
+                  << "  actual: " << r.g_args << "\n";
+            }
+
+            if ( r.f_retval != r.g_retval )
+            {
+                b << "return value:\n"
+                  << "  expected: " << r.f_retval << "\n"
+                  << "  actual: " << r.g_retval << "\n";
+            }
+
+            return b;
+        }
+    };
+
+    auto fcmp_call( auto fun, auto &arg, auto &rv, auto &eptr )
+    {
+        try
+        {
+            rv = std::apply( fun, arg );
+        }
+        catch ( ... )
+        {
+            eptr = std::current_exception();
+        }
+    }
+
+    auto fcmp( auto f, auto g, auto... args )
+    {
+        fcmp_result< decltype( g( args... ) ), decltype( args )... > r;
+
+        r.f_args = r.g_args = r.input.args = std::tuple{ args... };
+        DEBUG( r.input.args );
+        fcmp_call( f, r.f_args, r.f_retval, r.f_except );
+        fcmp_call( g, r.g_args, r.g_retval, r.g_except );
+
+        return r;
+    }
+
+    void fcmp_assert( auto f, auto g, auto && ... args )
+    {
+        auto match = fcmp( f, g, std::forward< decltype( args ) >( args )... );
+        ASSERT( match, match );
+    }
+}
