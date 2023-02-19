@@ -45,8 +45,8 @@
 #define TEST(n)         template< bool > void n()
 #endif
 
-#define BRICK_SHARP_FIRST(x, ...) #x
-#define BRICK_ASSERT(t,...) ::brq::assert_ ## t ## _fn( BRICK_LOCATION, __VA_ARGS__ )
+#define BRICK_ASSERT(...) ::brq::assert_fn( BRICK_LOCATION, std::tuple{ BRICK_SHARP_0( __VA_ARGS__ ) }, \
+                                            std::forward_as_tuple( __VA_ARGS__ ) )
 
 #ifdef NDEBUG
 
@@ -60,14 +60,12 @@
 
 #else
 
-#define BRICK_ASSERT_BIN(op, inv, x, ...)                                       \
-    BRICK_ASSERT( bin,                                                          \
-                  []( const auto &a, const auto &b ) { return a op b; },        \
-                  #x, #op, BRICK_SHARP_FIRST( __VA_ARGS__, ignored ),           \
-                  x, __VA_ARGS__ )
+#define BRICK_ASSERT_BIN(op, inv, ...)                                           \
+    ::brq::assert_bin_fn( BRICK_LOCATION, []( const auto &a, const auto &b ) { return a op b; }, \
+                          #op, std::tuple{ BRICK_SHARP_0( __VA_ARGS__  ) }, \
+                               std::forward_as_tuple( __VA_ARGS__ ) )
 
-#define ASSERT(...)     BRICK_ASSERT( bool, BRICK_SHARP_FIRST( __VA_ARGS__, ignored ), __VA_ARGS__ )
-#define ASSERT_P(p, x)  BRICK_ASSERT( pred, #p, #x, x, p( x ) )
+#define ASSERT(...)     BRICK_ASSERT( __VA_ARGS__ )
 #define ASSERT_EQ(...)  BRICK_ASSERT_BIN( ==, !=, __VA_ARGS__ )
 #define ASSERT_LT(...)  BRICK_ASSERT_BIN(  <, >=, __VA_ARGS__ )
 #define ASSERT_LEQ(...) BRICK_ASSERT_BIN( <=, >,  __VA_ARGS__ )
@@ -76,9 +74,8 @@
 
 #endif
 
-/* you must #include <brick-string> to use UNREACHABLE_F */
-#define UNREACHABLE(...)   BRICK_ASSERT( die, __VA_ARGS__ )
-#define NOT_IMPLEMENTED()  BRICK_ASSERT( die, "missing implementation" )
+#define UNREACHABLE(...)   BRICK_ASSERT( false, __VA_ARGS__ )
+#define NOT_IMPLEMENTED()  BRICK_ASSERT( false, "missing implementation" )
 
 #define BRICK_LOCATION ::brq::trace_location{ __LINE__, __FILE__ }
 
@@ -156,29 +153,19 @@ namespace brq
 #endif
     }
 
-    template< typename X, typename... Y >
-    void assert_bool_fn( const trace_location &l, std::string_view x_str, const X &x, const Y & ... y  )
+    template< typename... names_t, typename... vals_t >
+    void assert_fn( const trace_location &l,
+                    std::tuple< names_t... > names, std::tuple< vals_t... > vals )
     {
-        if ( !x )
+        if ( !std::get< 0 >( vals ) )
         {
             assert_failed f( l );
-            f << x_str;
-            format_args< true >( " ", f, y... );
+            trace_format< true >( f, names, vals );
             assert_signal( f );
         }
 
         if ( !singleton< assert_config >().quiet )
-            trace_fn< true >( 4, l, "assert:", x_str, y... );
-    }
-
-    template< typename... T >
-    __attribute__((noreturn))
-    void assert_die_fn( const trace_location &l, const T & ... args )
-    {
-        assert_failed f( l );
-        f << "unreachable executed:";
-        format_args< true >( " ", f, args... );
-        assert_signal( f );
+            trace_fn< true >( 4, l, names, vals );
     }
 
     template< typename value_t >
@@ -200,16 +187,26 @@ namespace brq
         }
     };
 
-    template< typename Op, typename A, typename B, typename... T >
-    void assert_bin_fn( const trace_location &l, Op op,
-                        std::string_view a_str, std::string_view op_str, std::string_view b_str,
-                        const A &a, const B &b, const T & ... args )
+    template< typename op_t, typename... names_t, typename... vals_t >
+    void assert_bin_fn( const trace_location &l, op_t op, std::string_view op_str,
+                        std::tuple< names_t... > names, std::tuple< vals_t... > vals )
     {
         bool pass;
 
-        if constexpr ( std::is_integral_v< A > && std::is_integral_v< B > )
-            pass = op( static_cast< std::common_type_t< A, B > >( a ),
-                       static_cast< std::common_type_t< A, B > >( b ) );
+        const auto &a = std::get< 0 >( vals );
+        const auto &b = std::get< 1 >( vals );
+
+        using a_t = std::remove_reference_t< decltype( a ) >;
+        using b_t = std::remove_reference_t< decltype( b ) >;
+
+        std::string_view a_str = std::get< 0 >( names ),
+                         b_str = std::get< 1 >( names );
+
+        if constexpr ( std::is_integral_v< a_t > && std::is_integral_v< b_t > )
+        {
+            using common_t = std::common_type_t< decltype( a ), decltype( b ) >;
+            pass = op( static_cast< common_t >( a ), static_cast< common_t >( b ) );
+        }
         else
             pass = !!op( a, b );
 
@@ -222,15 +219,15 @@ namespace brq
             f << "\n  " << rpad( eqw, a_str ) << " = " << a;
             f << "\n  " << rpad( eqw, b_str ) << " = " << b;
 
-            if constexpr ( sizeof...( args ) )
+            if constexpr ( sizeof...( names_t ) > 2 )
                 f << "\n  ";
-            format_args< true >( " ", f, args... );
+            trace_format< true >( f, tuple_drop< 2 >( names ), tuple_drop< 2 >( vals ) );
 
             assert_signal( f );
         }
 
         if ( !singleton< assert_config >().quiet )
-            trace_fn< true >( 4, l, "assert:", a_str, op_str, b_str, args... );
+            trace_fn< true >( 4, l, names, vals );
     }
 
     template< typename X >
