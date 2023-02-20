@@ -383,4 +383,20 @@ namespace brq
     {
         return ends_with< char32_t >( s, t );
     }
+
+    template< int n = 1, typename... args_t >
+    auto tuple_drop( const std::tuple< args_t... > &tuple )
+    {
+        auto make_shorter = []( auto, auto &&... keep )
+        {
+            return std::tuple( std::forward< decltype( keep ) >( keep )... );
+        };
+
+        auto r = std::apply( make_shorter, tuple );
+
+        if constexpr ( n == 1 )
+            return r;
+        else
+            return tuple_drop< n - 1 >( r );
+    }
 }
