@@ -288,7 +288,7 @@ namespace brq
     template< typename stream >
     decltype( auto ) format_nofail( stream &acc, fallback ) noexcept
     {
-        return acc << "<unknown>";
+        return acc << "[?]";
     }
 
     template< bool nofail, typename stream, typename arg_t >
