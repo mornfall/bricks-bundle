@@ -19,14 +19,14 @@ namespace brq::enumerate
         }
     }
 
-    auto find_block( nat index, nat block, auto size )
+    auto find_block( nat index, auto block, auto size )
     {
         return find_block_gen( index, std::tuple{ block }, size, []( auto &b ) { ++ b; } );
     }
 
     nat nat_enum( nat index ) { return index; }
 
-    nat tuple_block_size( nat b, int n, nat d )
+    nat tuple_block_size( nat b, int n, int d )
     {
         if ( n == 0 && b == 0 )
             return 1;
@@ -37,7 +37,7 @@ namespace brq::enumerate
         }
     }
 
-    nat tuple_block_size( nat b, int n, nat d, auto bounds )
+    nat tuple_block_size( nat b, int n, int d, auto bounds )
     {
         NOT_IMPLEMENTED();
     }
@@ -60,7 +60,7 @@ namespace brq::enumerate
         NOT_IMPLEMENTED();
     }
 
-    auto tuple_item( nat b, nat index, int i, nat d )
+    auto tuple_item( nat b, nat index, int i, int d )
     {
         if ( i == d )
             return std::pair{ index, b };
@@ -77,7 +77,7 @@ namespace brq::enumerate
     }
 
     template< int n, int i = 0 >
-    auto tuple_param( nat b, nat index, nat d = 0 )
+    auto tuple_param( nat b, nat index, int d = 0 )
     {
         ASSERT_LT( index, tuple_count( b, n ) );
 
@@ -110,7 +110,8 @@ namespace brq::enumerate
     auto list( nat index )
     {
         std::vector< nat > r;
-        nat d, val, b_idx, b_skip, deduct = 0;
+        nat val, b_idx, b_skip, deduct = 0;
+        int d = 0;
 
         for ( ; index > list_count( b_skip + 1 ); ++ b_skip );
 
