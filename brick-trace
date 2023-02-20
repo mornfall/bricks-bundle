@@ -339,6 +339,27 @@ namespace brq
             trace().do_print( builder, level );
         }
     }
+
+    inline void trace_clear() noexcept
+    {
+        trace()._buffer.clear();
+    }
+
+    inline void trace_dump( int fd = 2 ) noexcept
+    {
+        auto &buf = trace()._buffer;
+
+        const char *wptr = buf.buffer();
+        const char *eptr = wptr + buf.size();
+
+        while ( wptr < eptr )
+            if ( auto w = ::write( fd, wptr, eptr - wptr ); w > 0 )
+                wptr += w;
+            else
+                break;
+
+        buf.clear();
+    }
 }
 
 // vim: syntax=cpp tabstop=4 shiftwidth=4 expandtab
