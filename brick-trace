@@ -252,14 +252,14 @@ namespace brq
         }
 
 #ifdef __divine__
-        void print( string_builder &b, trace_level ) noexcept
+        void do_print( string_builder &b, trace_level ) noexcept
         {
             if ( b.truncated() )
                 __vm_cancel();
             __dios_trace_internal( 0, "%s", b.buffer() );
         }
 #else
-        void print( string_builder &b, trace_level level ) noexcept
+        void do_print( string_builder &b, trace_level level ) noexcept
         {
             b << "\n";
 #ifdef __unix__
@@ -274,6 +274,14 @@ namespace brq
 #endif
         }
 #endif
+
+        void print( string_builder &b, trace_level level ) noexcept
+        {
+            if ( _use_buffer )
+                _buffer << b.data() << "\n";
+            else
+                do_print( b, level );
+        }
     };
 
     inline struct trace &trace() noexcept { return singleton< struct trace >(); }
@@ -325,7 +333,7 @@ namespace brq
         else if ( trace().prepare( builder, level, location ) )
         {
             trace_format< debug_trace >( builder, names, vals );
-            trace().print( builder, level );
+            trace().do_print( builder, level );
         }
     }
 }
