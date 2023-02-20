@@ -81,7 +81,7 @@ namespace brq::numeric
             ASSERT_LEQ( 0, n );
             std::make_unsigned_t< int_t > conv = n;
 
-            if ( n < short_max )
+            if ( conv < short_max )
                 set_short( conv );
             else
             {
