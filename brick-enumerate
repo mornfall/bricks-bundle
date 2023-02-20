@@ -37,9 +37,30 @@ namespace brq::enumerate
         }
     }
 
-    nat tuple_block_size( nat b, int n, int d, auto bounds )
+    auto min_nonzero( const auto &a, const auto &b )
     {
-        NOT_IMPLEMENTED();
+        return a && a < b ? a : b;
+    }
+
+    template< int n, int i = 0 >
+    nat tuple_block_size( nat b, int d, const auto &bounds, nat total = 1 )
+    {
+        ASSERT_EQ( n, std::tuple_size_v< decltype( bounds ) > );
+        ASSERT_LT( d, n );
+
+        if constexpr ( i == n )
+            return total;
+        else
+        {
+            if ( i == d && std::get< i >( bounds ) < b )
+                return 0;
+
+            const auto &enum_b = std::get< i >( bounds );
+            nat choices = i == d ? 1 : i < d ? b : b - 1;
+            nat factor = min_nonzero( enum_b, choices );
+
+            return tuple_block_size< n, i + 1 >( b, n, d, bounds, total * factor );
+        }
     }
 
     nat tuple_count( nat b, int n )
@@ -50,14 +71,28 @@ namespace brq::enumerate
             return ( b + 1 ).pow( n ) - b.pow( n );
     }
 
-    nat tuple_count( nat b, int n, auto bounds )
+    template< int n, int i = 0 >
+    nat tuple_count( nat b, const auto &bounds, nat add = 1, nat sub = 1 )
     {
-        NOT_IMPLEMENTED();
+        if constexpr ( i == n )
+            return add - sub;
+        else
+        {
+            const auto &enum_b = std::get< i >( bounds );
+
+            return tuple_count< n, i + 1 >( b, bounds,
+                                            add * min_nonzero( enum_b, b ),
+                                            sub * min_nonzero( enum_b, b - 1 ) );
+        }
     }
 
-    nat tuple_bound( auto bounds )
+    template< int i = 0, typename bounds_t >
+    nat tuple_bound( const bounds_t &bounds )
     {
-        NOT_IMPLEMENTED();
+        if constexpr ( i == std::tuple_size_v< bounds_t > )
+            return 1;
+        else
+            return std::get< i >( bounds ) * tuple_bound< i + 1 >( bounds );
     }
 
     auto tuple_item( nat b, nat index, int i, int d )
