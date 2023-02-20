@@ -34,7 +34,13 @@ namespace std
                       sizeof( from_t ) == sizeof( to_t ), to_t >
     bit_cast( const from_t &from )
     {
+#if __has_builtin( __builtin_bit_cast )
         return __builtin_bit_cast( to_t, from );
+#else
+        to_t res;
+        std::memcpy( &res, &from, sizeof( from_t ) );
+        return res;
+#endif
     }
 }
 #endif
