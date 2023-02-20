@@ -289,7 +289,8 @@ namespace brq
     template< bool debug_trace, typename... names_t, typename... vals_t >
     void trace_format( brq::string_builder &b,
                        const std::tuple< names_t... > &names,
-                       const std::tuple< vals_t... > &vals ) noexcept
+                       const std::tuple< vals_t... > &vals,
+                       bool comma = false ) noexcept
     {
         static_assert( sizeof...( vals_t ) == sizeof...( names_t ) );
         auto fa = [&]( auto... args ) { format_args< debug_trace >( " ", b, args... ); };
@@ -305,16 +306,18 @@ namespace brq
 
             string_builder a_str;
             format_arg< true >( a_str, a );
+            bool literal = a_str.data() == a_name ||
+                           a_name.substr( 1, a_name.size() - 2 ) == a_str.data();
 
-            if ( a_str.data() == a_name || a_name.substr( 1, a_name.size() - 2 ) == a_str.data() )
+            if ( comma && !literal )
+                b << ", ";
+
+            if ( literal )
                 b << a_str;
             else
                 b << a_name << " → " << a_str;
 
-            if ( sizeof...( names_t ) > 1 )
-                b << ", ";
-
-            return trace_format< true >( b, tuple_drop( names ), tuple_drop( vals ) );
+            return trace_format< true >( b, tuple_drop( names ), tuple_drop( vals ), comma || !literal );
         }
     }
 
