@@ -40,6 +40,7 @@
 #ifdef __unix__
 #include <unistd.h>
 #include <syslog.h>
+#include <signal.h>
 #else
 #include <cstdio>
 #endif
@@ -360,6 +361,42 @@ namespace brq
 
         buf.clear();
     }
+
+#ifdef __unix__
+    inline struct ::sigaction trace_prevsig[ 32 ];
+    inline auto trace_siglist = { SIGINT, SIGQUIT, SIGILL, SIGABRT,
+                                  SIGFPE, SIGBUS, SIGSYS, SIGSEGV,
+                                  SIGTERM, SIGXCPU };
+
+    inline void trace_sighandler( int sig, siginfo_t *, void * )
+    {
+        trace_dump( 2 );
+        for ( auto s : trace_siglist )
+            sigaction( s, trace_prevsig + s, nullptr );
+        raise( sig );
+    }
+
+    inline void trace_sigaction() noexcept
+    {
+        static void *altstack = std::malloc( SIGSTKSZ );
+
+        ::stack_t st;
+        st.ss_sp = altstack;
+        st.ss_size = SIGSTKSZ;
+        st.ss_flags = 0;
+        sigaltstack( &st, NULL );
+
+        struct ::sigaction sa;
+        sa.sa_sigaction = trace_sighandler;
+        sa.sa_flags = SA_ONSTACK;
+        sigemptyset( &sa.sa_mask );
+
+        for ( auto sig : { SIGINT, SIGQUIT, SIGILL, SIGABRT,
+                           SIGFPE, SIGBUS, SIGSYS, SIGSEGV,
+                           SIGTERM, SIGXCPU } )
+            ::sigaction( sig, &sa, trace_prevsig + sig );
+    }
+#endif
 }
 
 // vim: syntax=cpp tabstop=4 shiftwidth=4 expandtab
