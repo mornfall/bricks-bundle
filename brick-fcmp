@@ -97,9 +97,10 @@ namespace brq
         fcmp_result< decltype( g( args... ) ), decltype( args )... > r;
 
         r.f_args = r.g_args = r.input.args = std::tuple{ args... };
-        DEBUG( r.input.args );
+        TRACE( r.input.args );
         fcmp_call( f, r.f_args, r.f_retval, r.f_except );
         fcmp_call( g, r.g_args, r.g_retval, r.g_except );
+        brq::trace_clear();
 
         return r;
     }
@@ -107,6 +108,6 @@ namespace brq
     void fcmp_assert( auto f, auto g, auto && ... args )
     {
         auto match = fcmp( f, g, std::forward< decltype( args ) >( args )... );
-        ASSERT( match, match );
+        ASSERT( match );
     }
 }
