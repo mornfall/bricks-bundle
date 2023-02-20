@@ -113,6 +113,24 @@ namespace brq::numeric
                 reallocate< true >( cap );
         }
 
+        nat &operator=( const nat &o )
+        {
+            _rep = o._rep;
+
+            if ( is_short() )
+                return *this;
+
+            auto cap = capacity();
+            for ( ; cap >= 1 && !digit_fast( cap - 1 ); -- cap );
+
+            if ( cap <= 1 && digit_fast( 0 ) < short_max )
+                set_short( digit_fast( 0 ) );
+            else
+                reallocate< true >( cap );
+
+            return *this;
+        }
+
         digit_t digit_fast( int idx ) const
         {
             ASSERT( is_long() );
