@@ -77,13 +77,13 @@
 #define TRACE(...) static_cast< decltype(__VA_ARGS__, void(0)) >(0)
 #define NOISE(...) static_cast< decltype(__VA_ARGS__, void(0)) >(0)
 #else
-#define TRACE(...) BRICK_TRACE( true,  4, __VA_ARGS__ )
-#define NOISE(...) BRICK_TRACE( true,  5, __VA_ARGS__ )
+#define TRACE(...) BRICK_TRACE( true,  ::brq::trace_level::trace, __VA_ARGS__ )
+#define NOISE(...) BRICK_TRACE( true,  ::brq::trace_level::noise, __VA_ARGS__ )
 #endif
-#define DEBUG(...) BRICK_TRACE( true,  3, __VA_ARGS__ )
-#define INFO(...)  BRICK_TRACE( false, 2, __VA_ARGS__ )
-#define WARN(...)  BRICK_TRACE( false, 1, __VA_ARGS__ )
-#define ERROR(...) BRICK_TRACE( false, 0, __VA_ARGS__ )
+#define DEBUG(...) BRICK_TRACE( true,  ::brq::trace_level::debug, __VA_ARGS__ )
+#define INFO(...)  BRICK_TRACE( false, ::brq::trace_level::info, __VA_ARGS__ )
+#define WARN(...)  BRICK_TRACE( false, ::brq::trace_level::warn, __VA_ARGS__ )
+#define ERROR(...) BRICK_TRACE( false, ::brq::trace_level::error, __VA_ARGS__ )
 
 namespace brq
 {
@@ -109,6 +109,15 @@ namespace brq
         }
     };
 
+    enum class trace_level
+    {
+        error, warn, info, debug, trace, noise
+    };
+
+    static constexpr std::array< const char *, 6 > trace_level_name =
+        { "error", "warning", "info", "debug", "trace", "noise" };
+
+
     /* In debug builds, decide which traces are active at run-time. This is to
      * prevent swamping the user with irrelevant traces from library code they
      * might be using. For short programs (e.g. unit tests), it might be okay
@@ -126,7 +135,8 @@ namespace brq
         struct rule_t
         {
             std::string_view suffix;
-            int line, level;
+            int line;
+            trace_level level;
         };
 
 #ifdef __divine__
@@ -163,20 +173,20 @@ namespace brq
                 _print_location = true;
             }
             else
-                add_rule( "+", 2, 0 ); /* print info-level messages by default */
+                add_rule( "+", trace_level::info, 0 );
         }
 
-        static constexpr std::array< const char *, 6 > levels =
-            { "error", "warning", "info", "debug", "trace", "noise" };
-
-        static std::string_view level( int i ) noexcept { return levels[ i ]; }
-
-        static int level( std::string_view name ) noexcept
+        static std::string_view level( trace_level i ) noexcept
         {
-            for ( int i = 0; i < int( levels.size() ); ++i )
-                if ( levels[ i ] == name )
-                    return i;
-            return 3;
+            return trace_level_name[ int( i ) ];
+        }
+
+        static trace_level level( std::string_view name ) noexcept
+        {
+            for ( int i = 0; i < int( trace_level_name.size() ); ++i )
+                if ( trace_level_name[ i ] == name )
+                    return trace_level( i );
+            return trace_level::debug;
         }
 
         void add_rule( std::string_view s, std::string_view l ) noexcept ( nothrow )
@@ -184,7 +194,7 @@ namespace brq
             add_rule( s, level( l ) );
         }
 
-        void add_rule( std::string_view suffix, int level, int line = 0 ) noexcept ( nothrow )
+        void add_rule( std::string_view suffix, trace_level level, int line = 0 ) noexcept ( nothrow )
         {
             _rules.push_back( rule_t{ suffix, line, level } );
         }
@@ -197,7 +207,9 @@ namespace brq
                 auto [ spec, level_s ] = split( first, '/' );
                 auto [ filename, line_s ] = split( spec, ':' );
 
-                int line = 0, lvl = level( level_s );
+                int line = 0;
+                trace_level lvl = level( level_s );
+
                 if ( line_s.size() )
                     line = strtol( line_s.begin(), nullptr, 10 );
 
@@ -206,7 +218,7 @@ namespace brq
             }
         }
 
-        bool enabled( int level, const trace_location &l ) noexcept
+        bool enabled( trace_level level, const trace_location &l ) noexcept
         {
             bool print = false;
 
@@ -218,14 +230,14 @@ namespace brq
                 {
                     if ( r.line && r.line != l.line )
                         continue; /* no match */
-                    print = r.level >= level;
+                    print = int( r.level ) >= int( level );
                 }
             }
 
             return print;
         }
 
-        bool prepare( string_builder &b, int level, trace_location location ) noexcept
+        bool prepare( string_builder &b, trace_level level, trace_location location ) noexcept
         {
             if ( !enabled( level, location ) )
                 return false;
@@ -240,19 +252,20 @@ namespace brq
         }
 
 #ifdef __divine__
-        void print( string_builder &b, int ) noexcept
+        void print( string_builder &b, trace_level ) noexcept
         {
             if ( b.truncated() )
                 __vm_cancel();
             __dios_trace_internal( 0, "%s", b.buffer() );
         }
 #else
-        void print( string_builder &b, int level ) noexcept
+        void print( string_builder &b, trace_level level ) noexcept
         {
             b << "\n";
 #ifdef __unix__
             if ( _use_syslog )
-                ::syslog( level > 0 ? LOG_DEBUG : LOG_INFO, "%s%s", _syslog_meta.buffer(), b.buffer() );
+                ::syslog( level > trace_level::error ? LOG_DEBUG : LOG_INFO,
+                          "%s%s", _syslog_meta.buffer(), b.buffer() );
             else
                 ::write( 2, b.buffer(), b.size() );
 #else
@@ -298,7 +311,7 @@ namespace brq
     }
 
     template< bool debug_trace, typename... names_t, typename... vals_t >
-    __debugfn void trace_fn( int level, trace_location location,
+    __debugfn void trace_fn( trace_level level, trace_location location,
                              const std::tuple< names_t... > &names,
                              const std::tuple< vals_t... > &vals ) noexcept
     {
