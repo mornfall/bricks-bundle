@@ -165,7 +165,7 @@ namespace brq
         }
 
         if ( !singleton< assert_config >().quiet )
-            trace_fn< true >( 4, l, names, vals );
+            trace_fn< true >( trace_level::debug, l, names, vals );
     }
 
     template< typename value_t >
@@ -227,7 +227,7 @@ namespace brq
         }
 
         if ( !singleton< assert_config >().quiet )
-            trace_fn< true >( 4, l, names, vals );
+            trace_fn< true >( trace_level::debug, l, names, vals );
     }
 
     template< typename X >
