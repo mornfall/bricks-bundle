@@ -4,6 +4,26 @@
 
 namespace brq::enumerate
 {
+    struct unbounded {};
+
+    template< typename >
+    struct is_unbounded : std::false_type {};
+
+    template<>
+    struct is_unbounded< unbounded > : std::true_type {};
+
+    template< typename type >
+    constexpr bool is_unbounded_v = is_unbounded< std::remove_cvref_t< type > >::value;
+}
+
+namespace std
+{
+    template< size_t i >
+    brq::nat get( const brq::enumerate::unbounded & ) { return 0; }
+}
+
+namespace brq::enumerate
+{
     auto find_block_gen( nat index, auto block, auto size, auto update_block )
     {
         while ( true )
@@ -26,115 +46,131 @@ namespace brq::enumerate
 
     nat nat_enum( nat index ) { return index; }
 
-    nat tuple_block_size( nat b, int n, int d )
-    {
-        if ( n == 0 && b == 0 )
-            return 1;
-        else
-        {
-            ASSERT_LT( d, n );
-            return ( b + 1 ).pow( d ) * b.pow( n - d - 1 );
-        }
-    }
-
     auto min_nonzero( const auto &a, const auto &b )
     {
         return a && a < b ? a : b;
     }
 
-    template< int n, int i = 0 >
-    nat tuple_block_size( nat b, int d, const auto &bounds, nat total = 1 )
+    template< int i = 0, typename... bounds_t >
+    nat tuple_block_size( nat b, int d, const std::tuple< bounds_t... > &bounds, nat total = 1 )
     {
-        ASSERT_EQ( n, std::tuple_size_v< decltype( bounds ) > );
-        ASSERT_LT( d, n );
-
-        if constexpr ( i == n )
+        if constexpr ( i == sizeof...( bounds_t ) )
             return total;
         else
         {
-            if ( i == d && std::get< i >( bounds ) < b )
+            const auto &enum_b = std::get< i >( bounds );
+
+            if ( i == d && enum_b <= b )
                 return 0;
 
-            const auto &enum_b = std::get< i >( bounds );
-            nat choices = i == d ? 1 : i < d ? b : b - 1;
+            nat choices = i == d ? 1 : i < d ? b + 1 : b;
             nat factor = min_nonzero( enum_b, choices );
 
-            return tuple_block_size< n, i + 1 >( b, n, d, bounds, total * factor );
+            return tuple_block_size< i + 1 >( b, d, bounds, total * factor );
         }
     }
 
-    nat tuple_count( nat b, int n )
+    template< typename bounds_t >
+    nat tuple_block_size( nat b, int n, int d, const bounds_t &bounds = bounds_t() )
     {
         if ( n == 0 && b == 0 )
             return 1;
+
+        if constexpr ( is_unbounded_v< bounds_t > )
+            return ( b + 1 ).pow( d ) * b.pow( n - d - 1 );
         else
-            return ( b + 1 ).pow( n ) - b.pow( n );
+            return tuple_block_size( b, d, bounds );
     }
 
-    template< int n, int i = 0 >
-    nat tuple_count( nat b, const auto &bounds, nat add = 1, nat sub = 1 )
+    template< int i = 0, typename... bounds_t >
+    nat tuple_count( nat b, const std::tuple< bounds_t... > &bounds, nat add = 1, nat sub = 1 )
     {
-        if constexpr ( i == n )
+        if constexpr ( i == sizeof...( bounds_t ) )
             return add - sub;
         else
         {
             const auto &enum_b = std::get< i >( bounds );
 
-            return tuple_count< n, i + 1 >( b, bounds,
-                                            add * min_nonzero( enum_b, b ),
-                                            sub * min_nonzero( enum_b, b - 1 ) );
+            return tuple_count< i + 1 >( b, bounds,
+                                         add * min_nonzero( enum_b, b + 1 ),
+                                         sub * min_nonzero( enum_b, b ) );
         }
     }
+
+    template< typename bounds_t = unbounded >
+    nat tuple_count( nat b, int n, const bounds_t &bounds = bounds_t() )
+    {
+        if ( b == 0 )
+            return 1;
+
+        if constexpr ( is_unbounded_v< decltype( bounds ) > )
+            return ( b + 1 ).pow( n ) - b.pow( n );
+        else
+            return tuple_count( b, bounds );
+    }
+
 
     template< int i = 0, typename bounds_t >
     nat tuple_bound( const bounds_t &bounds )
     {
-        if constexpr ( i == std::tuple_size_v< bounds_t > )
+        if constexpr ( is_unbounded_v< bounds_t > )
+            return 0;
+        else if constexpr ( i == std::tuple_size_v< bounds_t > )
             return 1;
         else
             return std::get< i >( bounds ) * tuple_bound< i + 1 >( bounds );
     }
 
-    auto tuple_item( nat b, nat index, int i, int d )
+    auto tuple_item( nat b, nat index, int i, int d, nat item_bound = 0 )
     {
         if ( i == d )
             return std::pair{ index, b };
         else
         {
-            auto choices = i < d ? b + 1 : b;
+            auto choices = min_nonzero( item_bound, i < d ? b + 1 : b );
             return divmod( index, choices );
         }
     }
 
-    auto tuple_block( nat b, int n, nat index )
+    template< typename bounds_t = unbounded >
+    auto tuple_block( nat b, int n, nat index, const bounds_t &bounds = bounds_t() )
     {
-        return find_block( index, 0, [&]( auto d ) { return tuple_block_size( b, n, d ); } );
+        return find_block( index, 0, [&]( auto d ) { return tuple_block_size( b, n, d, bounds ); } );
     }
 
-    template< int n, int i = 0 >
-    auto tuple_param( nat b, nat index, int d = 0 )
+    template< int n, int i = 0, typename bounds_t = unbounded >
+    auto tuple_param( nat b, nat index, const bounds_t &bounds = bounds_t(), int d = 0 )
     {
         ASSERT_LT( index, tuple_count( b, n ) );
 
         if constexpr ( i == 0 )
-            std::tie( index, d ) = tuple_block( b, n, index );
+            std::tie( index, d ) = tuple_block( b, n, index, bounds );
 
         if constexpr ( i == n )
             return std::tuple{};
         else
         {
-            auto [ i_next, r ] = tuple_item( b, index, i, d );
-            return std::tuple_cat( tuple_param< n, i + 1 >( b, i_next, d ), std::tuple{ r } );
+            auto [ i_next, r ] = tuple_item( b, index, i, d, std::get< i >( bounds ) );
+            return std::tuple_cat( tuple_param< n, i + 1 >( b, i_next, bounds, d ), std::tuple{ r } );
         }
     }
 
-    template< int n >
-    auto tuple( nat index )
+    template< int n, typename bounds_t = unbounded >
+    auto tuple( nat index, const bounds_t &bounds = bounds_t() )
     {
-        auto b = index.nth_root( n );
-        index -= b.pow( n );
-        std::tie( index, b ) = find_block( index, b, []( auto b ) { return tuple_count( b, n ); } );
-        return tuple_param< n >( b, index );
+        nat b = 0;
+
+        if constexpr ( is_unbounded_v< decltype( bounds ) > )
+        {
+            b = index.nth_root( n );
+            index -= b.pow( n );
+        }
+
+        /* TODO fast forward for the bounded case */
+
+        auto next_block = [&]( auto b ) { return tuple_count( b, n, bounds ); };
+        std::tie( index, b ) = find_block( index, b, next_block );
+        return tuple_param< n >( b, index, bounds );
     }
 
     nat list_count( nat n )
