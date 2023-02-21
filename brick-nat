@@ -323,6 +323,10 @@ namespace brq::numeric
                 return nat( a.short_digit() - b.digit( 0 ) );
 
             nat out = a;
+
+            if ( out.is_short() )
+                return nat( out.short_digit() - b.digit( 0 ) );
+
             out.sub_long( b );
             return out;
         }
