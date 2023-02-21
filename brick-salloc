@@ -144,7 +144,7 @@ namespace brq
 
         static void free( pointer p )
         {
-            std::free( p );
+            std::free( reinterpret_cast< char * >( p ) - size_bytes );
         }
     };
 
