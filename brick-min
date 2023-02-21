@@ -384,19 +384,36 @@ namespace brq
         return ends_with< char32_t >( s, t );
     }
 
-    template< int n = 1, typename... args_t >
-    auto tuple_drop( const std::tuple< args_t... > &tuple )
+    template< typename type_t, typename arg_t >
+    std::enable_if_t< std::is_rvalue_reference_v< type_t >,
+                      std::remove_reference_t< arg_t > > &&retain_rvalue( arg_t &&v )
     {
-        auto make_shorter = []( auto, auto &&... keep )
+        return std::move( v );
+    }
+
+    template< typename type_t, typename arg_t >
+    std::enable_if_t< !std::is_rvalue_reference_v< type_t >,
+                      std::remove_reference_t< arg_t > > &retain_rvalue( arg_t &&v )
+    {
+        return v;
+    }
+
+    template< int n = 1, typename arg1_t, typename... args_t >
+    auto tuple_drop( const std::tuple< arg1_t, args_t... > &tuple )
+    {
+        using retval_t = std::tuple< args_t... >;
+
+        auto make_shorter = [&]< size_t... indices >( std::index_sequence< indices... > )
         {
-            return std::tuple< decltype( keep ) ... >( std::forward< decltype( keep ) >( keep )... );
+            return retval_t{ retain_rvalue< args_t >( std::get< indices + 1 >( tuple ) )... };
         };
 
-        auto r = std::apply( make_shorter, tuple );
+        auto indices = std::index_sequence_for< args_t... >();
 
         if constexpr ( n == 1 )
-            return r;
+            return make_shorter( indices );
         else
-            return tuple_drop< n - 1 >( r );
+            return tuple_drop< n - 1 >( make_shorter( indices ) );
+
     }
 }
