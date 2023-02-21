@@ -389,7 +389,7 @@ namespace brq
     {
         auto make_shorter = []( auto, auto &&... keep )
         {
-            return std::tuple( std::forward< decltype( keep ) >( keep )... );
+            return std::tuple< decltype( keep ) ... >( std::forward< decltype( keep ) >( keep )... );
         };
 
         auto r = std::apply( make_shorter, tuple );
