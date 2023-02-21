@@ -181,7 +181,7 @@ namespace brq::enumerate
     auto list( nat index )
     {
         std::vector< nat > r;
-        nat val, b_idx, b_skip, deduct = 0;
+        nat val, b_idx, b_skip;
         int d = 0;
 
         for ( ; index > list_count( b_skip + 1 ); ++ b_skip );
