@@ -456,7 +456,8 @@ namespace brq
                 _data = sv.begin();
         }
 
-        operator const char*() { return _data; }
+        operator const char*() const { return _data; }
+        const char *get() const { return _data; }
 
         ~c_str()
         {
