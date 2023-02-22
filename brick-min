@@ -384,36 +384,20 @@ namespace brq
         return ends_with< char32_t >( s, t );
     }
 
-    template< typename type_t, typename arg_t >
-    std::enable_if_t< std::is_rvalue_reference_v< type_t >,
-                      std::remove_reference_t< arg_t > > &&retain_rvalue( arg_t &&v )
-    {
-        return std::move( v );
-    }
-
-    template< typename type_t, typename arg_t >
-    std::enable_if_t< !std::is_rvalue_reference_v< type_t >,
-                      std::remove_reference_t< arg_t > > &retain_rvalue( arg_t &&v )
-    {
-        return v;
-    }
-
     template< int n = 1, typename arg1_t, typename... args_t >
     auto tuple_drop( const std::tuple< arg1_t, args_t... > &tuple )
     {
         using retval_t = std::tuple< args_t... >;
+        auto indices = std::index_sequence_for< args_t... >();
 
         auto make_shorter = [&]< size_t... indices >( std::index_sequence< indices... > )
         {
-            return retval_t{ retain_rvalue< args_t >( std::get< indices + 1 >( tuple ) )... };
+            return retval_t{ static_cast< args_t >( std::get< indices + 1 >( tuple ) )... };
         };
-
-        auto indices = std::index_sequence_for< args_t... >();
 
         if constexpr ( n == 1 )
             return make_shorter( indices );
         else
             return tuple_drop< n - 1 >( make_shorter( indices ) );
-
     }
 }
