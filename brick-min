@@ -23,6 +23,8 @@
 #include <cctype>
 #include <string_view>
 #include <charconv>
+#include <utility>
+#include <tuple>
 
 #ifndef __inline_opt
 #define __inline_opt
