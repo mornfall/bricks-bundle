@@ -117,46 +117,47 @@ namespace brq::numeric
             }
         }
 
+        void detach()
+        {
+            if ( is_short() )
+                return;
+
+            auto cap = capacity();
+
+            for ( ; cap >= 1 && !digit_fast( cap - 1 ); -- cap );
+
+            if ( cap <= 1 && digit_fast( 0 ) < short_max )
+                set_short( digit_fast( 0 ) );
+            else
+                reallocate< true >( cap );
+        }
+
+        nat( const nat &o ) : _rep( o._rep )
+        {
+            detach();
+        }
+
         ~nat()
         {
             if ( is_long() )
                 alloc::free( long_rep() );
         }
 
-        nat( const nat &o ) : _rep( o._rep )
-        {
-            if ( is_short() )
-                return;
-
-            auto cap = capacity();
-            for ( ; cap >= 1 && !digit_fast( cap - 1 ); -- cap );
-
-            if ( cap <= 1 && digit_fast( 0 ) < short_max )
-                set_short( digit_fast( 0 ) );
-            else
-                reallocate< true >( cap );
-        }
-
         nat &operator=( const nat &o )
         {
+            if ( is_long() )
+                alloc::free( long_rep() );
+
             _rep = o._rep;
-
-            if ( is_short() )
-                return *this;
-
-            auto cap = capacity();
-            for ( ; cap >= 1 && !digit_fast( cap - 1 ); -- cap );
-
-            if ( cap <= 1 && digit_fast( 0 ) < short_max )
-                set_short( digit_fast( 0 ) );
-            else
-                reallocate< true >( cap );
-
+            detach();
             return *this;
         }
 
         nat &operator=( nat &&o )
         {
+            if ( is_long() )
+                alloc::free( long_rep() );
+
             _rep = o._rep;
             o.set_short( 0 );
             return *this;
