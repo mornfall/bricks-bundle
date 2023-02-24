@@ -178,6 +178,21 @@ namespace brq::enumerate
         return n <= 1 ? n + 1 : ( n.pow( n + 1 ) - 1 ) / ( n - 1 ); /* ∑₀ᵏnᵏ */
     };
 
+    auto list_param( nat b, int n, nat index, int d = 0 )
+    {
+        std::vector< nat > r;
+        std::tie( index, d ) = tuple_block( b, n, index );
+
+        for ( int i = n - 1; i >= 0; --i )
+        {
+            brq::nat val;
+            std::tie( index, val ) = tuple_item( b, index, i, d );
+            r.push_back( val );
+        }
+
+        return r;
+    }
+
     auto list( nat index )
     {
         std::vector< nat > r;
@@ -249,6 +264,36 @@ namespace brq::enumerate
 
         r = set_param( b, n, i_block );
         r.insert( b );
+        return r;
+    }
+
+    nat map_count( nat b, int n )
+    {
+        return comb( b, n ) * tuple_count( b, n );
+    }
+
+    std::map< nat, nat > map( nat index )
+    {
+        auto update_count = []( auto &b, auto &n ) { n = 1; ++ b; };
+        int b, n;
+        std::tie( index, b, n ) =
+            find_block_gen( index, std::tuple( 0, 1 ), map_count, update_count );
+
+        if ( n == 0 )
+            return {};
+
+        std::map< nat, nat > r;
+
+        auto [ i, j ] = divmod( index, tuple_count( b, n ) );
+        auto keys   = set_param( b, std::min( n, b ), i );
+        auto values = list_param( b, n, j );
+
+        auto k_it = keys.begin();
+        auto v_it = values.begin();
+
+        for ( ; k_it != keys.end(); ++k_it, ++v_it )
+            r.emplace( *k_it,  *v_it );
+
         return r;
     }
 }
