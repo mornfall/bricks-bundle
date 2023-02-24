@@ -38,10 +38,28 @@ namespace brq
             curl_easy_setopt( _curl, CURLOPT_WRITEDATA, this );
         }
 
-        curl( curl &&o ) = default;
+        curl( curl &&o )
+        {
+            *this = std::move( o );
+        }
+
+        curl &operator=( curl &&o )
+        {
+            std::swap( _curl, o._curl );
+            std::swap( _mime, o._mime );
+            std::swap( _url, o._url );
+            _data = std::move( o._data );
+            _response_code = o._response_code;
+
+            return *this;
+        }
+
+        curl( const curl & ) = delete;
+        curl &operator=( const curl & ) = delete;
 
         ~curl()
         {
+            curl_url_cleanup( _url );
             curl_easy_cleanup( _curl );
             curl_mime_free( _mime );
         }
