@@ -41,6 +41,11 @@ namespace brq::enumerate
 
     nat nat_enum( nat index ) { return index; }
 
+    int integer( nat index )
+    {
+        return index % 2 == 0 ? index.short_digit() / 2 : -index.short_digit() / 2;
+    }
+
     auto min_nonzero( const auto &a, const auto &b )
     {
         return a && a < b ? a : b;

@@ -104,4 +104,7 @@ int main()
         enum_prefix( lists, []( auto i ) { return list( i ); } );
     brq::test_case( "sets" ) =
         enum_prefix( sets_3, []( auto i ) { return set( i ); } );
+
+    brq::test_case( "ints" ) =
+        enum_prefix( std::set{ 0, -1, 1, -2, 2 }, []( auto i ) { return integer( i ); } );
 }
