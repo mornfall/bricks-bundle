@@ -172,23 +172,18 @@ namespace brq::enumerate
 
     auto list_param( nat b, int n, nat index, int d = 0 )
     {
-        std::vector< nat > r;
+        std::vector< nat > r( n );
         std::tie( index, d ) = tuple_block( b, n, index );
 
         for ( int i = n - 1; i >= 0; --i )
-        {
-            brq::nat val;
-            std::tie( index, val ) = tuple_item( b, index, i, d );
-            r.push_back( val );
-        }
+            std::tie( index, r[ i ] ) = tuple_item( b, index, i, d );
 
         return r;
     }
 
     auto list( nat index )
     {
-        std::vector< nat > r;
-        nat val, b_idx, b_skip;
+        nat b_idx, b_skip;
         int d = 0;
 
         for ( ; index > list_count( b_skip + 1 ); ++ b_skip );
@@ -208,12 +203,10 @@ namespace brq::enumerate
         std::tie( index, b_idx ) = find_block( index, b_idx, block_size );
         auto [ n, b ] = tuple< 2 >( b_idx );
         std::tie( index, d ) = tuple_block( b, n.short_digit(), index );
+        std::vector< nat > r( n.short_digit() );
 
-        for ( int i = n.short_digit() - 1; i >= 0; --i )
-        {
-            std::tie( index, val ) = tuple_item( b, index, i, d );
-            r.push_back( val );
-        }
+        for ( int i = 0; i < n; ++i )
+            std::tie( index, r[ i ] ) = tuple_item( b, index, i, d );
 
         return r;
     }
