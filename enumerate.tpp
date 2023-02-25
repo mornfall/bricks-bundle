@@ -4,82 +4,104 @@
 #include "brick-nat"
 #include "brick-enumerate"
 
+auto enum_prefix( auto expect, auto do_enum )
+{
+    return [=]
+    {
+        decltype( expect ) enumerated;
+
+        for ( int i = 0; i < expect.size(); ++i )
+        {
+            ASSERT( !enumerated.contains( do_enum( i ) ), i, do_enum( i ) );
+            enumerated.insert( do_enum( i ) );
+        }
+
+        for ( auto i : enumerated )
+            if ( !expect.contains( i ) )
+                DEBUG( "extra: ", i );
+
+        for ( auto i : expect )
+            if ( !enumerated.contains( i ) )
+                DEBUG( "missing: ", i );
+
+        ASSERT_EQ( expect, enumerated );
+    };
+}
+
 int main()
 {
-    using tup_2 = std::tuple< brq::nat, brq::nat >;
-    using tup_3 = std::tuple< brq::nat, brq::nat, brq::nat >;
-    using list  = std::vector< brq::nat >;
-    using set   = std::set< brq::nat >;
+    using t2_t   = std::array< brq::nat, 2 >;
+    using t3_t   = std::array< brq::nat, 3 >;
+    using list_t = std::vector< brq::nat >;
+    using set_t  = std::set< brq::nat >;
 
-    std::vector< tup_2 > tup_2_order =
+    std::set< t2_t > t2_b_33 =
     {
         { 0, 0 },
         { 0, 1 }, { 1, 0 }, { 1, 1 },
         { 0, 2 }, { 1, 2 }, { 2, 0 }, { 2, 1 }, { 2, 2 }
     };
 
-    std::vector< list > list_order =
+    std::set< t2_t > t2_b_26 =
     {
-        {},
-        { 0 },
-        { 1 }, { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 },
-        { 2 }, { 0, 2 }, { 1, 2 }, { 2, 0 }, { 2, 1 }, { 2, 2 },
-               { 0, 0, 0 }, { 0, 0, 1 }, { 0, 1, 0 }, { 0, 1, 1 },
-               { 1, 0, 0 }, { 1, 1, 0 }, { 1, 0, 1 }, { 1, 1, 1 },
-               { 0, 0, 2 }, { 1, 0, 2 }, { 0, 1, 2 }, { 1, 1, 2 },
-               { 0, 2, 0 }, { 1, 2, 0 }, { 0, 2, 1 }, { 1, 2, 1 },
-               { 0, 2, 2 }, { 1, 2, 2 }, { 2, 0, 0 }, { 2, 1, 0 },
-               { 2, 2, 0 }, { 2, 0, 1 }, { 2, 1, 1 }, { 2, 2, 1 },
-               { 2, 0, 2 }, { 2, 1, 2 }, { 2, 2, 2 },
-        { 3 }, { 0, 3 }, { 1, 3 }, { 2, 3 }, { 3, 0 }, { 3, 1 }, { 3, 2 }, { 3, 3 }
+        { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 },
+        { 0, 2 }, { 1, 2 }, { 0, 3 }, { 1, 3 },
+        { 0, 4 }, { 1, 4 }, { 0, 5 }, { 1, 5 }
     };
 
-    std::vector< set > set_order =
+    std::set< t2_t > t2_b_62 =
+    {
+        { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 },
+        { 2, 0 }, { 2, 1 }, { 3, 0 }, { 3, 1 },
+        { 4, 0 }, { 4, 1 }, { 5, 0 }, { 5, 1 }
+    };
+
+    std::set< t3_t > t3_b_223 =
+    {
+        { 0, 0, 0 }, { 0, 0, 1 }, { 0, 1, 0 }, { 0, 1, 1 },
+        { 1, 0, 0 }, { 1, 0, 1 }, { 1, 1, 0 }, { 1, 1, 1 },
+        { 0, 0, 2 }, { 0, 1, 2 }, { 1, 0, 2 }, { 1, 1, 2 }
+    };
+
+    std::set< list_t > lists =
+    {
+        {}, { 0 }, { 1 }, { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 },
+        { 2 }, { 0, 2 }, { 1, 2 }, { 2, 0 }, { 2, 1 }, { 2, 2 },
+        { 3 }, { 0, 3 }, { 1, 3 }, { 2, 3 }, { 3, 0 }, { 3, 1 }, { 3, 2 }, { 3, 3 },
+
+        { 0, 0, 0 }, { 0, 0, 1 }, { 0, 1, 0 }, { 0, 1, 1 },
+        { 1, 0, 0 }, { 1, 1, 0 }, { 1, 0, 1 }, { 1, 1, 1 },
+
+        { 0, 0, 2 }, { 1, 0, 2 }, { 0, 1, 2 }, { 1, 1, 2 },
+        { 0, 2, 0 }, { 1, 2, 0 }, { 0, 2, 1 }, { 1, 2, 1 },
+        { 0, 2, 2 }, { 1, 2, 2 }, { 2, 0, 0 }, { 2, 1, 0 },
+        { 2, 2, 0 }, { 2, 0, 1 }, { 2, 1, 1 }, { 2, 2, 1 },
+        { 2, 0, 2 }, { 2, 1, 2 }, { 2, 2, 2 }
+    };
+
+    std::set< set_t > sets_3 =
     {
         {}, { 0 }, { 1 }, { 0, 1 }, { 2 }, { 0, 2 }, { 1, 2 }, { 0, 1, 2 }
     };
 
-    brq::test_case( "tuple" ) = [=]
-    {
-        int i = 0;
+    using namespace brq::enumerate;
 
-        for ( auto t : tup_2_order )
-        {
-            ASSERT_EQ( brq::tuple_enum< 2 >( i ), t, i );
-            i ++;
-        }
-    };
+    brq::test_case( "tuple 2" ) =
+        enum_prefix( t2_b_33, []( auto i ) { return tuple< 2 >( i ); } );
 
-    brq::test_case( "tuple bounded" ) = [=]
-    {
-        int i = 0;
+    brq::test_case( "tuple 2 bounded (3, 3)" ) =
+        enum_prefix( t2_b_33, []( auto i ) { return tuple< 2 >( i ); } );
 
-        for ( auto t : tup_2_order )
-        {
-            ASSERT_EQ( brq::enumerate::tuple< 2 >( i, std::tuple( 3, 3 ) ), t, i );
-            i ++;
-        }
-    };
+    brq::test_case( "tuple 3 bounded (2, 2, 3)" ) =
+        enum_prefix( t3_b_223, []( auto i ) { return tuple< 3 >( i, std::array{ 2, 2, 3 } ); } );
 
-    brq::test_case( "list" ) = [=]
-    {
-        int i = 0;
+    brq::test_case( "tuple 2 bounded (2, 6)" ) =
+        enum_prefix( t2_b_26, []( auto i ) { return tuple< 2 >( i, std::array{ 2, 6 } ); } );
+    brq::test_case( "tuple 2 bounded (6, 2)" ) =
+        enum_prefix( t2_b_62, []( auto i ) { return tuple< 2 >( i, std::array{ 6, 2 } ); } );
 
-        for ( auto l : list_order )
-        {
-            ASSERT_EQ( l, brq::list_enum( i ), i );
-            i ++;
-        }
-    };
-
-    brq::test_case( "set" ) = [=]
-    {
-        int i = 0;
-
-        for ( auto l : set_order )
-        {
-            ASSERT_EQ( l, brq::set_enum( i ), i );
-            i ++;
-        }
-    };
+    brq::test_case( "list" ) =
+        enum_prefix( lists, []( auto i ) { return list( i ); } );
+    brq::test_case( "sets" ) =
+        enum_prefix( sets_3, []( auto i ) { return set( i ); } );
 }
