@@ -1,5 +1,4 @@
 #include "brick-nat"
-#include <set>
 #include <vector>
 #include <numeric>
 
@@ -218,7 +217,7 @@ namespace brq::enumerate
 
     auto set_param( nat b, nat n, nat index )
     {
-        std::set< nat > r;
+        std::vector< nat > r;
 
         nat u = b;
         nat v = n;
@@ -231,7 +230,7 @@ namespace brq::enumerate
             do
                 u -= 1;
             while ( comb( u, v ) > x );
-            r.insert( b - 1 - u );
+            r.push_back( b - 1 - u );
             x -= comb( u, v );
             v -= 1;
         }
@@ -241,7 +240,7 @@ namespace brq::enumerate
 
     auto set( nat index )
     {
-        std::set< nat > r;
+        std::vector< nat > r;
 
         if ( index == 0 )
             return r;
@@ -253,7 +252,8 @@ namespace brq::enumerate
         auto [ i_block, n ] = find_block( index, 0, [&]( auto n ) { return comb( b, n ); } );
 
         r = set_param( b, n, i_block );
-        r.insert( b );
+        r.push_back( b );
+
         return r;
     }
 
@@ -262,17 +262,17 @@ namespace brq::enumerate
         return comb( b, n ) * tuple_count( b, n );
     }
 
-    std::map< nat, nat > map( nat index )
+    auto map( nat index )
     {
         auto update_count = []( auto &b, auto &n ) { n = 1; ++ b; };
         int b, n;
         std::tie( index, b, n ) =
             find_block_gen( index, std::tuple( 0, 1 ), map_count, update_count );
 
-        if ( n == 0 )
-            return {};
+        std::vector< std::tuple< nat, nat > > r( n );
 
-        std::map< nat, nat > r;
+        if ( n == 0 )
+            return r;
 
         auto [ i, j ] = divmod( index, tuple_count( b, n ) );
         auto keys   = set_param( b, std::min( n, b ), i );
@@ -281,8 +281,8 @@ namespace brq::enumerate
         auto k_it = keys.begin();
         auto v_it = values.begin();
 
-        for ( ; k_it != keys.end(); ++k_it, ++v_it )
-            r.emplace( *k_it,  *v_it );
+        for ( int i = 0; k_it != keys.end(); ++k_it, ++v_it, ++i )
+            r[ i ] = std::tuple( *k_it,  *v_it );
 
         return r;
     }
@@ -291,6 +291,7 @@ namespace brq::enumerate
 namespace brq
 {
     template< int n > auto tuple_enum( nat index ) { return enumerate::tuple< n >( index ); }
-    std::vector< nat > list_enum( nat index ) { return enumerate::list( index ); }
-    std::set< nat > set_enum( nat index ) { return enumerate::set( index ); }
+    auto list_enum( nat index ) { return enumerate::list( index ); }
+    auto set_enum( nat index ) { return enumerate::set( index ); }
+    auto map_enum( nat index ) { return enumerate::map( index ); }
 }
