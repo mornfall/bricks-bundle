@@ -51,11 +51,11 @@ namespace brq::enumerate
     }
 
     template< std::size_t n, typename bound_t >
-    nat tuple_block_size( nat b, int d, const std::array< bound_t, n > &bounds )
+    nat tuple_block_size( nat b, std::size_t d, const std::array< bound_t, n > &bounds )
     {
         nat total = 1;
 
-        for ( int i = 0; i < n; ++i )
+        for ( std::size_t i = 0; i < n; ++i )
         {
             if ( i == d && bounds[ i ] <= b )
                 return 0;
@@ -84,7 +84,7 @@ namespace brq::enumerate
     {
         nat add = 1, sub = 1;
 
-        for ( int i = 0; i < n; ++i )
+        for ( std::size_t i = 0; i < n; ++i )
         {
             add *= min_nonzero( bounds[ i ], b + 1 );
             sub *= min_nonzero( bounds[ i ], b );
