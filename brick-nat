@@ -382,6 +382,12 @@ namespace brq::numeric
             return out;
         }
 
+        /* TODO */
+        nat &operator+=( const nat &o ) { return *this = *this + o; }
+        nat &operator*=( const nat &o ) { return *this = *this * o; }
+        nat &operator/=( const nat &o ) { return *this = *this / o; }
+        nat &operator%=( const nat &o ) { return *this = *this % o; }
+
         friend nat operator<<( const nat &a, int total_bits )
         {
             nat out;
