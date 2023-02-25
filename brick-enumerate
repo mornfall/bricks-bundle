@@ -1,6 +1,7 @@
 #include "brick-nat"
 #include <set>
 #include <vector>
+#include <numeric>
 
 namespace brq::enumerate
 {
@@ -135,7 +136,12 @@ namespace brq::enumerate
         std::array< nat, n > r;
         std::tie( index, d ) = tuple_block( b, n, index, bounds );
 
-        for ( int i = 0; i < n; ++i )
+        std::array< int, n > indices;
+        std::iota( indices.begin(), indices.end(), 0 );
+        std::stable_sort( indices.begin(), indices.end(),
+                          [&]( int i, int j ) { return bounds[ i ] > bounds[ j ]; } );
+
+        for ( auto i : indices )
             std::tie( index, r[ i ] ) = tuple_item( b, index, i, d, bounds[ i ] );
 
         return r;
@@ -195,12 +201,12 @@ namespace brq::enumerate
 
         auto block_size = []( nat b_idx )
         {
-            auto [ b, n ] = tuple< 2 >( b_idx );
+            auto [ n, b ] = tuple< 2 >( b_idx );
             return tuple_count( b, n.short_digit() );
         };
 
         std::tie( index, b_idx ) = find_block( index, b_idx, block_size );
-        auto [ b, n ] = tuple< 2 >( b_idx );
+        auto [ n, b ] = tuple< 2 >( b_idx );
         std::tie( index, d ) = tuple_block( b, n.short_digit(), index );
 
         for ( int i = n.short_digit() - 1; i >= 0; --i )
