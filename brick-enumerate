@@ -4,7 +4,10 @@
 
 namespace brq::enumerate
 {
-    struct unbounded {};
+    struct unbounded
+    {
+        int operator[]( std::size_t ) const { return 0; }
+    };
 
     template< typename >
     struct is_unbounded : std::false_type {};
@@ -14,16 +17,7 @@ namespace brq::enumerate
 
     template< typename type >
     constexpr bool is_unbounded_v = is_unbounded< std::remove_cvref_t< type > >::value;
-}
 
-namespace std
-{
-    template< size_t i >
-    brq::nat get( const brq::enumerate::unbounded & ) { return 0; }
-}
-
-namespace brq::enumerate
-{
     auto find_block_gen( nat index, auto block, auto size, auto update_block )
     {
         while ( true )
@@ -51,23 +45,21 @@ namespace brq::enumerate
         return a && a < b ? a : b;
     }
 
-    template< int i = 0, typename... bounds_t >
-    nat tuple_block_size( nat b, int d, const std::tuple< bounds_t... > &bounds, nat total = 1 )
+    template< std::size_t n, typename bound_t >
+    nat tuple_block_size( nat b, int d, const std::array< bound_t, n > &bounds )
     {
-        if constexpr ( i == sizeof...( bounds_t ) )
-            return total;
-        else
-        {
-            const auto &enum_b = std::get< i >( bounds );
+        nat total = 1;
 
-            if ( i == d && enum_b <= b )
+        for ( int i = 0; i < n; ++i )
+        {
+            if ( i == d && bounds[ i ] <= b )
                 return 0;
 
             nat choices = i == d ? 1 : i < d ? b + 1 : b;
-            nat factor = min_nonzero( enum_b, choices );
-
-            return tuple_block_size< i + 1 >( b, d, bounds, total * factor );
+            total *= min_nonzero( bounds[ i ], choices );
         }
+
+        return total;
     }
 
     template< typename bounds_t >
@@ -82,19 +74,18 @@ namespace brq::enumerate
             return tuple_block_size( b, d, bounds );
     }
 
-    template< int i = 0, typename... bounds_t >
-    nat tuple_count( nat b, const std::tuple< bounds_t... > &bounds, nat add = 1, nat sub = 1 )
+    template< std::size_t n, typename bound_t >
+    nat tuple_count( nat b, const std::array< bound_t, n > &bounds )
     {
-        if constexpr ( i == sizeof...( bounds_t ) )
-            return add - sub;
-        else
-        {
-            const auto &enum_b = std::get< i >( bounds );
+        nat add = 1, sub = 1;
 
-            return tuple_count< i + 1 >( b, bounds,
-                                         add * min_nonzero( enum_b, b + 1 ),
-                                         sub * min_nonzero( enum_b, b ) );
+        for ( int i = 0; i < n; ++i )
+        {
+            add *= min_nonzero( bounds[ i ], b + 1 );
+            sub *= min_nonzero( bounds[ i ], b );
         }
+
+        return add - sub;
     }
 
     template< typename bounds_t = unbounded >
@@ -138,21 +129,16 @@ namespace brq::enumerate
         return find_block( index, 0, [&]( auto d ) { return tuple_block_size( b, n, d, bounds ); } );
     }
 
-    template< int n, int i = 0, typename bounds_t = unbounded >
+    template< int n, typename bounds_t = unbounded >
     auto tuple_param( nat b, nat index, const bounds_t &bounds = bounds_t(), int d = 0 )
     {
-        ASSERT_LT( index, tuple_count( b, n ) );
+        std::array< nat, n > r;
+        std::tie( index, d ) = tuple_block( b, n, index, bounds );
 
-        if constexpr ( i == 0 )
-            std::tie( index, d ) = tuple_block( b, n, index, bounds );
+        for ( int i = 0; i < n; ++i )
+            std::tie( index, r[ i ] ) = tuple_item( b, index, i, d, bounds[ i ] );
 
-        if constexpr ( i == n )
-            return std::tuple{};
-        else
-        {
-            auto [ i_next, r ] = tuple_item( b, index, i, d, std::get< i >( bounds ) );
-            return std::tuple_cat( tuple_param< n, i + 1 >( b, i_next, bounds, d ), std::tuple{ r } );
-        }
+        return r;
     }
 
     template< int n, typename bounds_t = unbounded >
