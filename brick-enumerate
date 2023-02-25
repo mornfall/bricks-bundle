@@ -1,3 +1,4 @@
+#pragma once
 #include "brick-nat"
 #include <vector>
 #include <numeric>
