@@ -265,10 +265,10 @@ namespace brq::enumerate
 
     auto map( nat index )
     {
-        auto update_count = []( auto &b, auto &n ) { n = 1; ++ b; };
+        auto update_count = []( auto &b, auto &n ) { if ( b == n ) n = 1, ++ b; else ++ n; };
         int b, n;
         std::tie( index, b, n ) =
-            find_block_gen( index, std::tuple( 0, 1 ), map_count, update_count );
+            find_block_gen( index, std::tuple( 1, 1 ), map_count, update_count );
 
         std::vector< std::tuple< nat, nat > > r( n );
 
