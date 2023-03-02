@@ -186,12 +186,12 @@ namespace brq::enumerate
         return r;
     }
 
-    auto list( nat index )
+    auto list( nat index, nat bound = 0 )
     {
         nat b_idx, b_skip;
         int d = 0;
 
-        for ( ; index > list_count( b_skip + 1 ); ++ b_skip );
+        for ( ; index > list_count( b_skip + 1 ) && ( !bound || b_skip < bound ); ++ b_skip );
 
         if ( b_skip >= 1 )
         {
@@ -199,14 +199,14 @@ namespace brq::enumerate
             b_idx = 2 + b_skip * ( b_skip + 1 );
         }
 
-        auto block_size = []( nat b_idx )
+        auto block_size = [&]( nat b_idx )
         {
-            auto [ n, b ] = tuple< 2 >( b_idx );
+            auto [ n, b ] = tuple< 2 >( b_idx, std::array{ brq::nat( 0 ), bound } );
             return tuple_count( b, n.short_digit() );
         };
 
         std::tie( index, b_idx ) = find_block( index, b_idx, block_size );
-        auto [ n, b ] = tuple< 2 >( b_idx );
+        auto [ n, b ] = tuple< 2 >( b_idx, std::array{ brq::nat( 0 ), bound } );
         std::tie( index, d ) = tuple_block( b, n.short_digit(), index );
         std::vector< nat > r( n.short_digit() );
 
