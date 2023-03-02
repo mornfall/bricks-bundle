@@ -4,6 +4,14 @@
 
 namespace brq
 {
+    struct precondition_failed : std::exception {};
+
+    void precondition( bool x )
+    {
+        if ( !x )
+            throw precondition_failed{};
+    }
+
     template< typename... args_t >
     struct fcmp_input
     {
