@@ -1,6 +1,7 @@
 #pragma once
 #include <brick-assert>
 #include <brick-string>
+#include <brick-enumerate>
 
 namespace brq
 {
@@ -10,6 +11,54 @@ namespace brq
     {
         if ( !x )
             throw precondition_failed{};
+    }
+
+    template< typename out_t, typename... state_t >
+    struct program
+    {
+        using op_t = std::function< out_t( state_t & ... ) >;
+        using outs_t = std::vector< out_t >;
+
+        std::vector< op_t > ops;
+        brq::string_builder str;
+
+        friend brq::string_builder &operator<<( brq::string_builder &b, const program &p )
+        {
+            return b << p.str;
+        }
+
+        auto eval( state_t... state )
+        {
+            std::vector< out_t > outs;
+
+            for ( auto &f : ops )
+                outs.push_back( f( state... ) );
+
+            return std::tuple{ outs, state... };
+        }
+
+        void add( const op_t &op, std::string_view name )
+        {
+            ops.push_back( op );
+            str << "\n" << name;
+        }
+    };
+
+    template< typename out_t, typename... state_t >
+    auto enum_program( brq::nat index,
+                       std::vector< std::string_view > names,
+                       auto... avail )
+    {
+        using op_t = std::function< out_t( state_t & ... ) >;
+        using ops_t = std::vector< op_t >;
+
+        ops_t avail_vec{ avail... };
+        program< out_t, state_t ... > p;
+
+        for ( auto i : brq::enumerate::list( index, avail_vec.size() ) )
+            p.add( avail_vec[ i.short_digit() ], names[ i.short_digit() ] );
+
+        return p;
     }
 
     template< typename... args_t >
