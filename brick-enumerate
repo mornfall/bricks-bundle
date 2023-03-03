@@ -58,7 +58,7 @@ namespace brq::enumerate
 
         for ( std::size_t i = 0; i < n; ++i )
         {
-            if ( i == d && bounds[ i ] <= b )
+            if ( i == d && bounds[ i ] && bounds[ i ] <= b )
                 return 0;
 
             nat choices = i == d ? 1 : i < d ? b + 1 : b;
