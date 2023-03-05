@@ -687,22 +687,20 @@ namespace brq::sql
             else
             {
                 using type = typename col_t::base_type;
+
                 bool use_serial = col.is_primary && std::is_integral_v< type > && !col.is_foreign;
                 auto typestr = sql_type< type >();
                 auto seqname = std::string( tabname ) + "_pkey_seq";
                 auto colname = col.get_name( col );
+                auto defstr = col_t::is_nullable ? brq::format( "null" ) :
+                              use_serial         ? brq::format( "nextval('", seqname, "')" )
+                                                 : brq::format( "'", type(), "'" );
 
                 if ( use_serial )
-                {
                     txn.exec() << "create sequence if not exists " << seqname;
-                    alter() << "add column if not exists " << colname << " " << typestr
-                            << " default nextval('" << seqname << "')";
-                }
-                else
-                {
-                    alter() << "add column if not exists " << colname << " " << typestr
-                            << " default '" << type() << "'"; /* TODO make configurable! */
-                }
+
+                alter() << "add column if not exists " << colname << " " << typestr
+                        << " default " << defstr;
 
                 if ( use_serial )
                     alter() << "alter column " << colname << " set default nextval('" << seqname << "')";
