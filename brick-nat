@@ -117,6 +117,46 @@ namespace brq::numeric
             }
         }
 
+        template< typename acc_t >
+        acc_t fold()
+        {
+            if ( is_short() )
+                return acc_t( short_digit() );
+
+            acc_t acc = 0;
+
+            for ( int i = capacity(); i >= 0; --i )
+            {
+                acc *= base;
+                acc += digit_fast( i );
+            }
+
+            return acc;
+        }
+
+        template< typename acc_t >
+        void unfold( acc_t acc )
+        {
+            if ( acc < base )
+                set_short( acc );
+            else
+            {
+                acc_t fbase = acc_t( digit_max ) + 1;
+                int cap = std::ceil( std::log( acc ) / std::log( fbase ) );
+
+                if ( is_short() )
+                    allocate( cap );
+                else if ( cap > capacity() )
+                    reallocate( cap );
+
+                for ( int i = 0; i < capacity() && acc > 0; ++i )
+                {
+                    set_digit_fast( i, std::fmod( acc, fbase ) );
+                    acc /= fbase;
+                }
+            }
+        }
+
         void detach()
         {
             if ( is_short() )
