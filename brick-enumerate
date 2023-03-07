@@ -287,6 +287,55 @@ namespace brq::enumerate
 
         return r;
     }
+
+    struct exp_dist
+    {
+        nat start, cutoff, last;
+        double base, count = 0;
+
+        exp_dist( nat c, nat l, double b )
+            : start( 0 ), cutoff( c ), last( l ), base( b )
+        {}
+
+        exp_dist( nat c, nat l )
+            : exp_dist( c, l, 0 )
+        {
+            double cf = c.fold< double >();
+            double lf = l.fold< double >();
+            base = std::exp( std::log( lf ) / ( 2 * cf ) );
+        }
+
+        struct sentinel {};
+
+        auto begin() const { return *this; }
+        sentinel end() const { return {}; }
+
+        nat operator*() const { return start; }
+
+        exp_dist &operator++()
+        {
+            if ( start < cutoff )
+                ++start;
+            else
+            {
+                nat dist;
+                dist.unfold( std::pow( base, count ) - std::pow( base, count - 1 ) );
+
+                if ( dist > 1 )
+                    start += dist;
+                else
+                    ++ start;
+            }
+
+            ++ count;
+            return *this;
+        }
+
+        bool operator==( sentinel ) const
+        {
+            return start >= last;
+        }
+    };
 }
 
 namespace brq
