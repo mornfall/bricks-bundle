@@ -29,12 +29,13 @@ namespace brq
 
         auto eval( state_t... state )
         {
-            std::vector< out_t > outs;
+            using outs_t = std::vector< out_t >;
+            outs_t outs;
 
             for ( auto &f : ops )
                 outs.push_back( f( state... ) );
 
-            return std::tuple{ outs, state... };
+            return std::tuple< outs_t, state_t... >{ outs, state... };
         }
 
         void add( const op_t &op, std::string_view name )
