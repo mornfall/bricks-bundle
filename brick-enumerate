@@ -294,14 +294,17 @@ namespace brq::enumerate
         double base, count = 0;
 
         exp_dist( nat c, nat l, double b )
-            : start( 0 ), cutoff( c ), last( l ), base( b )
+            : start( 0 ),
+              cutoff( nat( 2 ).pow( c ) ),
+              last( nat( 2 ).pow( l ) ),
+              base( b )
         {}
 
         exp_dist( nat c, nat l )
             : exp_dist( c, l, 0 )
         {
-            double cf = c.fold< double >();
-            double lf = l.fold< double >();
+            double cf = cutoff.fold< double >();
+            double lf = last.fold< double >();
             base = std::exp( std::log( lf ) / ( 2 * cf ) );
         }
 
