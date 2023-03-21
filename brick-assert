@@ -45,8 +45,18 @@
 #define TEST(n)         template< bool > void n()
 #endif
 
-#define BRICK_ASSERT(...) ::brq::assert_fn( BRICK_LOCATION, std::tuple{ BRICK_SHARP_0( __VA_ARGS__ ) }, \
-                                            std::forward_as_tuple( __VA_ARGS__ ) )
+#ifdef __clang__
+#define BRICK_DELAY( ... ) __VA_ARGS__
+#define BRICK_FORCE( x ) x
+#else
+#define BRICK_DELAY( ... ) [&]{ return __VA_ARGS__; }
+#define BRICK_FORCE( x ) ( x )()
+#endif
+
+#define BRICK_ASSERT(x, ...) \
+    ::brq::assert_fn( BRICK_LOCATION, \
+                      std::tuple{ #x __VA_OPT__(, BRICK_SHARP_0( __VA_ARGS__ ) ) }, \
+                      std::forward_as_tuple( BRICK_DELAY( x ) __VA_OPT__(, __VA_ARGS__ ) ) )
 
 #ifdef NDEBUG
 
@@ -157,15 +167,22 @@ namespace brq
     void assert_fn( const trace_location &l,
                     std::tuple< names_t... > names, std::tuple< vals_t... > vals )
     {
-        if ( !std::get< 0 >( vals ) )
+        if ( !singleton< assert_config >().quiet )
+        {
+            std::tuple prefix{ "assert ", std::get< 0 >( names ),
+                               sizeof...( names_t ) > 1 ? ": " : "" };
+
+            trace_fn< true >( trace_level::debug, l,
+                              std::tuple_cat( prefix, tuple_drop( names ) ),
+                              std::tuple_cat( prefix, tuple_drop( vals ) ) );
+        }
+
+        if ( !BRICK_FORCE( std::get< 0 >( vals ) ) )
         {
             assert_failed f( l );
             trace_format< true >( f, names, vals );
             assert_signal( f );
         }
-
-        if ( !singleton< assert_config >().quiet )
-            trace_fn< true >( trace_level::debug, l, names, vals );
     }
 
     template< typename value_t >
