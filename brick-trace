@@ -283,7 +283,10 @@ namespace brq
         void print( string_builder &b, trace_level level ) noexcept
         {
             if ( _use_buffer )
+            {
+                _buffer.rotate( 1024 * 1024, 2 * 1024 * 1024 );
                 _buffer << b.data() << "\n";
+            }
             else
                 do_print( b, level );
         }
@@ -335,6 +338,7 @@ namespace brq
 
         if ( trace()._use_buffer )
         {
+            trace()._buffer.rotate( 1024 * 1024, 2 * 1024 * 1024 );
             trace_format< debug_trace >( trace()._buffer, names, vals );
             trace()._buffer << "\n";
         }

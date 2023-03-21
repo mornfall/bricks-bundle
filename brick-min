@@ -88,6 +88,16 @@ namespace brq
         bool truncated() const noexcept { return _d.oom; }
         void kill() { clear(); _d.oom = true; }
 
+        void rotate( int low, int high )
+        {
+            if ( size() < high )
+                return;
+
+            int start = size() - low;
+            std::memmove( _d.buffer, _d.buffer + start, low );
+            _d.offset = low;
+        }
+
         string_builder &hex( bool h = true ) { _d.hex = h; return *this; }
         string_builder &dec() { _d.hex = false; return *this; }
 
