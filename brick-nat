@@ -2,6 +2,7 @@
 #include <brick-salloc>
 #include <brick-bitlevel>
 #include <brick-string>
+#include <cmath>
 
 namespace brq::numeric
 {
