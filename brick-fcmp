@@ -62,6 +62,22 @@ namespace brq
         return p;
     }
 
+    template< typename out_t, typename... state_t >
+    auto enum_program( brq::nat index, auto... avail )
+    {
+        using op_t = std::function< out_t( state_t & ... ) >;
+        using ops_t = std::vector< op_t >;
+
+        std::vector< std::string_view > names{ std::get< 0 >( avail )... };
+        ops_t avail_vec{ std::get< 1 >( avail )... };
+        program< out_t, state_t ... > p;
+
+        for ( auto i : brq::enumerate::list( index, avail_vec.size() ) )
+            p.add( avail_vec[ i.short_digit() ], names[ i.short_digit() ] );
+
+        return p;
+    }
+
     template< typename... args_t >
     struct fcmp_input
     {
