@@ -580,6 +580,13 @@ namespace brq
     };
 #endif
 
+    inline void rename( std::string_view src, std::string_view dst )
+    {
+        int res = ::rename( std::string( src ).c_str(), std::string( dst ).c_str() );
+        if ( res < 0 )
+            brq::raise< system_error >() << "moving " << src << " to " << dst;
+    }
+
     inline void rename_if_exists( std::string_view src, std::string_view dst )
     {
         int res = ::rename( std::string( src ).c_str(), std::string( dst ).c_str() );
