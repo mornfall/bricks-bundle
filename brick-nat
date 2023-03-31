@@ -270,7 +270,7 @@ namespace brq::numeric
             if ( is_short() && short_digit() < short_max - 1 )
                 set_short( short_digit() + 1 );
             else
-                NOT_IMPLEMENTED();
+                add_long( nat( 1 ) ); /* TODO this can be done a lot more efficiently */
         }
 
         void add_long( const nat &b, int b_offset = 0, int max_digits = 0 )
