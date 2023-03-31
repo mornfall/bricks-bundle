@@ -288,6 +288,27 @@ namespace brq::enumerate
         return r;
     }
 
+    auto graph( nat index ) /* unorientend */
+    {
+        std::vector< std::pair< nat, nat > > graph;
+
+        if ( index == 0 )
+            return graph;
+
+        auto edge_idxs = brq::enumerate::set( index );
+        auto ecnt = *std::max_element( edge_idxs.begin(), edge_idxs.end() ) + 1;
+        auto [ size, rem ] = divmod( 2 + ( 1 + 8 * ecnt ).nth_root( 2 ), 2 );
+        size += rem > 0 ? 1 : 0;
+
+        for ( auto edge_idx : edge_idxs )
+        {
+            auto edge = brq::enumerate::set_param( size, 2, edge_idx );
+            graph.emplace_back( edge[ 0 ], edge[ 1 ] );
+        }
+
+        return graph;
+    }
+
     struct exp_dist
     {
         nat start, cutoff, last;
