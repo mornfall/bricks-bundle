@@ -172,8 +172,10 @@ namespace brq::numeric
 
             for ( ; cap >= 1 && !digit_fast( cap - 1 ); -- cap );
 
-            if ( cap <= 1 && digit_fast( 0 ) < short_max )
+            if ( cap == 1 && digit_fast( 0 ) < short_max )
                 set_short( digit_fast( 0 ) );
+            else if ( cap == 0 ) /* TODO we probably want to make this impossible */
+                set_short( 0 );
             else
                 reallocate< true >( cap );
         }
