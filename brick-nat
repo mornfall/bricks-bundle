@@ -322,7 +322,22 @@ namespace brq::numeric
                 nat out = a;
 
                 if ( out.is_short() )
-                    return b + out;
+                {
+                    if ( b.is_short() )
+                        return out + b;
+                    else
+                    {
+                        nat b_ = b;
+
+                        if ( b_.is_short() )
+                            return out + b_;
+                        else
+                        {
+                            b_.add_long( out );
+                            return b_;
+                        }
+                    }
+                }
 
                 out.add_long( b );
                 return out;
