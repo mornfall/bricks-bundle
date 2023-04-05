@@ -311,22 +311,24 @@ namespace brq::enumerate
 
     struct exp_dist
     {
-        nat start, cutoff, last;
-        double base, count = 0;
+        nat start, cutoff, last, base;
+
+        static const int prec = 40;
+        static inline const nat one = nat( 1 ) << prec;
 
         exp_dist( nat c, nat l, double b )
             : start( 0 ),
-              cutoff( nat( 2 ).pow( c ) ),
-              last( nat( 2 ).pow( l ) ),
-              base( b )
+              cutoff( nat( 2 ).pow( c + prec ) ),
+              last( nat( 2 ).pow( l + prec ) ),
+              base( b * std::pow( 2, prec ) )
         {}
 
         exp_dist( nat c, nat l )
             : exp_dist( c, l, 0 )
         {
-            double cf = cutoff.fold< double >();
-            double lf = last.fold< double >();
-            base = std::exp( std::log( lf ) / ( 2 * cf ) );
+            double cf = ( cutoff >> prec ).fold< double >();
+            double lf = ( last >> prec ).fold< double >();
+            base = std::exp( ( std::log( lf ) - std::log( cf ) ) / cf ) * std::pow( 2, prec );
         }
 
         struct sentinel {};
@@ -334,24 +336,15 @@ namespace brq::enumerate
         auto begin() const { return *this; }
         sentinel end() const { return {}; }
 
-        nat operator*() const { return start; }
+        nat operator*() const { return start >> prec; }
 
         exp_dist &operator++()
         {
             if ( start < cutoff )
-                ++start;
+                start += one;
             else
-            {
-                nat dist;
-                dist.unfold( std::pow( base, count ) - std::pow( base, count - 1 ) );
+                start = ( start * base ) >> prec;
 
-                if ( dist > 1 )
-                    start += dist;
-                else
-                    ++ start;
-            }
-
-            ++ count;
             return *this;
         }
 
