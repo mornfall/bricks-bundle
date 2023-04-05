@@ -603,17 +603,18 @@ namespace brq::numeric
             if ( n == 1 || k == 0 )
                 return k;
 
-            nat u = 2 << ( k.log2() / n );
-            nat s = u + 1;
+            auto s = nat( 2 ) << ( k.log2() / n );
 
-            while ( u < s )
+            while ( true )
             {
-                s = u;
-                auto t = ( n - 1 ) * s + k / s.pow( n - 1 );
-                u = t / n;
-            }
+                const auto t = ( n - 1 ) * s + k / s.pow( n - 1 );
+                const auto s_next = t / n;
 
-            return s;
+                if ( s_next >= s )
+                    return s;
+                else
+                    s = s_next;
+            }
         }
 
         friend string_builder &operator<<( string_builder &b, const nat &n )
