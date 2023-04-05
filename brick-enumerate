@@ -361,4 +361,5 @@ namespace brq
     auto list_enum( nat index ) { return enumerate::list( index ); }
     auto set_enum( nat index ) { return enumerate::set( index ); }
     auto map_enum( nat index ) { return enumerate::map( index ); }
+    auto int_enum( nat index ) { return enumerate::integer( index ); }
 }
