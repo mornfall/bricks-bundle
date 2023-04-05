@@ -403,6 +403,28 @@ namespace brq::numeric
             return *this;
         }
 
+        bool sub( const nat &b, int b_offset = 0 )
+        {
+            if ( is_short() )
+            {
+                auto shifted = b << b_offset;
+
+                if ( shifted.is_short() )
+                {
+                    digit_t x;
+                    bool borrow = __builtin_sub_overflow( short_digit(), shifted.short_digit(), &x );
+                    set_short( x );
+                    return borrow;
+                }
+                else
+                    NOT_IMPLEMENTED();
+            }
+            else
+                return sub_long( b, b_offset );
+
+            abort();
+        }
+
         friend nat operator*( const nat &a, const nat &b )
         {
             if ( a.is_short() && b.is_short() )
@@ -528,7 +550,7 @@ namespace brq::numeric
                         correct();
                 }
 
-                if ( u.sub_long( nat( q_hat ) * v, j ) )
+                if ( u.sub( nat( q_hat ) * v, j ) )
                 {
                     q_hat -= 1;
                     u.add_long( v, j, n + 1 );
