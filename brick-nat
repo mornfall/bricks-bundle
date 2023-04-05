@@ -622,8 +622,15 @@ namespace brq::numeric
         friend string_builder &operator<<( string_builder &b, const nat &n )
         {
             b << "0x";
-            for ( int j = n.capacity() - 1; j >= 0; -- j )
+            int j = n.capacity() - 1;
+
+            for ( ; j > 0 && !n.digit( j ); --j ); /* skip zeros */
+
+            b << std::hex << n.digit( j );
+
+            for ( -- j; j >= 0; -- j )
                 b << std::hex << pad( 16, '0' ) << n.digit( j ) << mark;
+
             return b;
         }
 
