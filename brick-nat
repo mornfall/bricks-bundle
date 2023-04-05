@@ -118,6 +118,11 @@ namespace brq::numeric
             }
         }
 
+        nat( double v ) : nat()
+        {
+            unfold( v );
+        }
+
         template< typename acc_t >
         acc_t fold()
         {
