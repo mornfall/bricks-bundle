@@ -499,19 +499,28 @@ namespace brq::numeric
 
         friend nat operator>>( const nat &a, int total_bits )
         {
-            nat out;
-            int digits = total_bits / digit_bits;
-            int bits = total_bits % digit_bits;
-            int cap = a.capacity() - digits;
+            if ( a.is_short() )
+                return nat( a.short_digit() >> total_bits);
+            else
+                return nat( a ) >> total_bits;
+        }
 
-            out.allocate( cap );
-
-            for ( int i = 0; i < cap; ++i )
+        friend nat operator>>( nat &&out, int total_bits )
+        {
+            if ( out.is_short() )
+                out.set_short( out.short_digit() >> total_bits );
+            else
             {
-                digit_t d = a.digit( i + digits ) >> bits;
-                if ( bits )
-                    d |= a.digit( i + digits + 1 ) << ( digit_bits - bits );
-                out.set_digit_fast( i, d );
+                int digits = total_bits / digit_bits;
+                int bits = total_bits % digit_bits;
+
+                for ( int i = 0; i < out.capacity(); ++i )
+                {
+                    digit_t d = out.digit( i + digits ) >> bits;
+                    if ( bits )
+                        d |= out.digit( i + digits + 1 ) << ( digit_bits - bits );
+                    out.set_digit_fast( i, d );
+                }
             }
 
             return out;
