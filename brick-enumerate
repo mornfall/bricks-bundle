@@ -52,8 +52,8 @@ namespace brq::enumerate
         return a && a < b ? a : b;
     }
 
-    template< std::size_t n, typename bound_t >
-    nat tuple_block_size( nat b, std::size_t d, const std::array< bound_t, n > &bounds )
+    template< std::size_t n, typename bound_t, typename item_bound_t >
+    nat tuple_block_size( bound_t b, std::size_t d, const std::array< item_bound_t, n > &bounds )
     {
         nat total = 1;
 
@@ -62,8 +62,8 @@ namespace brq::enumerate
             if ( i == d && bounds[ i ] && bounds[ i ] <= b )
                 return 0;
 
-            nat choices = i == d ? 1 : i < d ? b + 1 : b;
-            total *= min_nonzero( bounds[ i ], choices );
+            bound_t choices = i == d ? 1 : i < d ? b + 1 : b;
+            total *= min_nonzero( bound_t( bounds[ i ] ), choices );
         }
 
         return total;
@@ -81,15 +81,16 @@ namespace brq::enumerate
             return tuple_block_size( b, d, bounds );
     }
 
-    template< std::size_t n, typename bound_t >
-    nat tuple_count( nat b, const std::array< bound_t, n > &bounds )
+    template< std::size_t n, typename bound_t, typename item_bound_t >
+    nat tuple_count( bound_t b, const std::array< item_bound_t, n > &bounds )
     {
         nat add = 1, sub = 1;
 
         for ( std::size_t i = 0; i < n; ++i )
         {
-            add *= min_nonzero( bounds[ i ], b + 1 );
-            sub *= min_nonzero( bounds[ i ], b );
+            bound_t b_i = bounds[ i ];
+            add *= min_nonzero( b_i, b + 1 );
+            sub *= min_nonzero( b_i, b );
         }
 
         return add - sub;
