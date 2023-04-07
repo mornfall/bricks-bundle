@@ -197,6 +197,11 @@ namespace brq
             return *this;
         }
 
+        string_builder &operator<<( std::byte c ) noexcept
+        {
+            return *this << int( c );
+        }
+
         string_builder &operator<<( const void *ptr ) noexcept
         {
             auto was_hex = _d.hex;
