@@ -58,7 +58,8 @@ namespace brq::numeric
         {
             auto size = count * sizeof( digit_t );
             _rep = std::bit_cast< rep_t >( alloc::allocate( size ) );
-            std::memset( &*long_rep(), 0, size );
+            for ( int i = 0; i < count; ++i )
+                long_rep()[ i ] = 0;
         }
 
         template< bool shrink = false >
