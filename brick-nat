@@ -74,7 +74,6 @@ namespace brq::numeric
             char *mem = static_cast< char * >( static_cast< void * >( &*long_rep() ) );
 
             std::memcpy( mem, &*old, copy_size );
-            std::memset( mem + copy_size, 0, new_size - copy_size );
 
             if ( !shrink )
                 alloc::free( old );
