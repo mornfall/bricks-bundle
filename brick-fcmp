@@ -84,6 +84,21 @@ namespace brq
         std::tuple< args_t... > args;
     };
 
+    std::type_index except_type( std::exception_ptr eptr )
+    {
+        try
+        {
+            if ( eptr )
+                std::rethrow_exception( eptr );
+        }
+        catch ( const std::exception &e )
+        {
+            return typeid( e );
+        }
+
+        return typeid( nullptr );
+    }
+
     bool except_type_eq( std::exception_ptr a_ptr, std::exception_ptr b_ptr )
     {
         if ( !a_ptr && !b_ptr )
@@ -91,21 +106,7 @@ namespace brq
         if ( !a_ptr || !b_ptr )
             return false;
 
-        try
-        {
-            std::rethrow_exception( a_ptr );
-        }
-        catch ( std::exception &a )
-        {
-            try
-            {
-                std::rethrow_exception( b_ptr );
-            }
-            catch ( std::exception &b )
-            {
-                return typeid( a ) == typeid( b );
-            }
-        }
+        return except_type( a_ptr ) == except_type( b_ptr );
     }
 
     struct fcmp_base
@@ -148,6 +149,16 @@ namespace brq
                 b << "return value:\n"
                   << "  expected: " << r.f_retval << "\n"
                   << "  actual: " << r.g_retval << "\n";
+            }
+
+            auto f_eid = except_type( r.f_except );
+            auto g_eid = except_type( r.g_except );
+
+            if ( f_eid != g_eid )
+            {
+                b << "exception type:\n"
+                  << "  expected: " << f_eid.name() << "\n"
+                  << "  actual: " << g_eid.name() << "\n";
             }
 
             return b;
