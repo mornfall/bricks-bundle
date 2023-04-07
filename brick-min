@@ -249,13 +249,6 @@ namespace brq
             return *this << "[" << p.first << ", " << p.second << "]";
         }
 
-        template< typename F >
-        auto operator<<( const F &f ) noexcept
-            -> decltype( f( *this ), *this )
-        {
-            return f( *this ), *this;
-        }
-
         template< typename V >
         auto operator<<( const V &val ) noexcept
             -> std::enable_if_t< std::is_arithmetic_v< V >,
