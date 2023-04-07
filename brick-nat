@@ -497,6 +497,27 @@ namespace brq::numeric
             return { out };
         }
 
+        nat &operator>>=( int total_bits )
+        {
+            if ( is_short() )
+                set_short( short_digit() >> total_bits );
+            else
+            {
+                int digits = total_bits / digit_bits;
+                int bits = total_bits % digit_bits;
+
+                for ( int i = 0; i < capacity(); ++i )
+                {
+                    digit_t d = digit( i + digits ) >> bits;
+                    if ( bits )
+                        d |= digit( i + digits + 1 ) << ( digit_bits - bits );
+                    set_digit_fast( i, d );
+                }
+            }
+
+            return *this;
+        }
+
         friend nat operator>>( const nat &a, int total_bits )
         {
             if ( a.is_short() )
@@ -507,23 +528,7 @@ namespace brq::numeric
 
         friend nat operator>>( nat &&out, int total_bits )
         {
-            if ( out.is_short() )
-                out.set_short( out.short_digit() >> total_bits );
-            else
-            {
-                int digits = total_bits / digit_bits;
-                int bits = total_bits % digit_bits;
-
-                for ( int i = 0; i < out.capacity(); ++i )
-                {
-                    digit_t d = out.digit( i + digits ) >> bits;
-                    if ( bits )
-                        d |= out.digit( i + digits + 1 ) << ( digit_bits - bits );
-                    out.set_digit_fast( i, d );
-                }
-            }
-
-            return out;
+            return out >>= total_bits;
         }
 
         friend std::pair< nat, nat > divmod( const nat &a, const nat &b )
