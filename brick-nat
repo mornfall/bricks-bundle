@@ -273,10 +273,14 @@ namespace brq::numeric
 
         void operator++()
         {
-            if ( is_short() && short_digit() < short_max - 1 )
+            if ( is_short() && short_digit() < short_max )
                 set_short( short_digit() + 1 );
             else
-                add_long( nat( 1 ) ); /* TODO this can be done a lot more efficiently */
+            {
+                if ( is_short() )
+                    reallocate( 2 );
+                add_digit_and_carry( 1, 0 );
+            }
         }
 
         void add_long( const nat &b, int b_offset = 0, int max_digits = 0 )
