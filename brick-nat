@@ -432,23 +432,29 @@ namespace brq::numeric
             abort();
         }
 
+        digit_t add_digit_long( digit_t d, int pos )
+        {
+            return __builtin_add_overflow( digit_fast( pos ), d, &long_rep()[ pos ] );
+        }
+
+        void add_digit_and_carry( digit_t d, int pos )
+        {
+            while ( d )
+                d = add_digit_long( d, pos++ );
+        }
+
         friend nat operator*( const nat &a, const nat &b )
         {
             if ( a.is_short() && b.is_short() )
                  return nat( double_t( a.short_digit() ) * double_t( b.short_digit() ) );
 
             nat out;
-            nat x;
-
-            x.allocate( a.capacity() + 1 );
             out.allocate( a.capacity() + b.capacity() );
 
             for ( int i = 0; i < out.capacity(); ++i )
                 out.set_digit_fast( i, 0 );
 
-            int shift = 0;
-
-            for ( int i = 0; i < b.capacity(); ++i, ++shift )
+            for ( int i = 0; i < b.capacity(); ++i )
             {
                 double_t carry = 0;
 
@@ -456,12 +462,11 @@ namespace brq::numeric
                 {
                     double_t prod = double_t( a.digit( j ) ) * double_t( b.digit( i ) ) + carry;
                     carry = prod >> digit_bits;
-                    x.set_digit_fast( j, prod );
+                    prod &= digit_max;
+                    carry += out.add_digit_long( prod, i + j );
                 }
 
-                ASSERT_LEQ( carry, digit_max );
-                x.set_digit_fast( a.capacity(), carry );
-                out.add_long( x, shift );
+                out.add_digit_and_carry( carry, i + a.capacity() );
             }
 
             return out;
