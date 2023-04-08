@@ -5,6 +5,8 @@
 
 namespace brq::enumerate
 {
+    BRICK_OPTIONAL_ASSERTIONS( enumerate );
+
     struct unbounded
     {
         int operator[]( std::size_t ) const { return 0; }
