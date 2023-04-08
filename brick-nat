@@ -58,7 +58,7 @@ namespace brq::numeric
 
         void allocate( int count )
         {
-            auto size = count * sizeof( digit_t );
+            int size = count * sizeof( digit_t );
             _rep = std::bit_cast< rep_t >( alloc::allocate( size ) );
             for ( int i = 0; i < count; ++i )
                 long_rep()[ i ] = 0;
@@ -98,7 +98,7 @@ namespace brq::numeric
                   typename = std::enable_if_t< is_integral_v< int_t > > >
         nat( int_t n = 0 )
         {
-            ASSERT_LEQ( 0, n );
+            ASSERT_LEQ( int_t( 0 ), n );
 
             make_unsigned_t< int_t > conv = n;
 
