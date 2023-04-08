@@ -23,6 +23,8 @@ namespace brq::numeric
     template< template< typename > class alloc_t = std_malloc_with_size >
     struct nat
     {
+        BRICK_OPTIONAL_ASSERTIONS( nat );
+
         using digit_t = uint64_t;
         using double_t = __uint128_t;
 
