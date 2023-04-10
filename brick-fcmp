@@ -119,6 +119,63 @@ namespace brq
         int64_t nsec;
     };
 
+    template< typename elem_t, typename = void >
+    struct abbreviate
+    {
+        const elem_t &e;
+        abbreviate( const elem_t &e ) : e( e ) {}
+
+        friend auto &operator<<( brq::string_builder &b, const abbreviate &a )
+        {
+            return b << a.e;
+        }
+    };
+
+    template< typename coll_t >
+    struct abbreviate< coll_t, std::void_t< typename coll_t::value_type > >
+    {
+        const coll_t &col;
+        abbreviate( const coll_t &c ) : col( c ) {}
+
+        friend auto &operator<<( brq::string_builder &b, const abbreviate &a )
+        {
+            int i = 0;
+
+            for ( auto it = a.col.begin(); it != a.col.end(); ++it, ++i )
+            {
+                if ( i < 16 )
+                    b << ( i ? ", " : "[ " ) << brq::abbreviate( *it );
+                if ( i == 16 && a.col.size() > 24 )
+                    b << ", …";
+                if ( a.col.size() - i < 8 )
+                    b << ", " << brq::abbreviate( *it );
+            }
+
+            return b << ( i ? " ]" : "[]" );
+        }
+    };
+
+    template< typename... args_t >
+    struct abbreviate< std::tuple< args_t... > >
+    {
+        using indices = std::index_sequence_for< args_t... >;
+        const std::tuple< args_t... > &tuple;
+        abbreviate( const std::tuple< args_t... > &t ) : tuple( t ) {}
+
+        template< std::size_t... idx >
+        auto &print( std::index_sequence< idx... >, brq::string_builder &b ) const
+        {
+            int i = 0;
+            ( ( b << ( i++ ? ", " : "[ " ) << brq::abbreviate{ std::get< idx >( tuple ) } ), ... );
+            return b << " ]";
+        }
+
+        friend auto &operator<<( brq::string_builder &b, const abbreviate &a )
+        {
+            return a.print( indices(), b );
+        }
+    };
+
     constexpr int timeout_factor = 50;
 
     template< typename retval_t, typename... args_t >
@@ -138,7 +195,7 @@ namespace brq
         friend brq::string_builder &operator<<( brq::string_builder &b, const fcmp_result &r )
         {
             b << "\n";
-            b << "input arguments: " << r.input << "\n";
+            b << "input arguments: " << abbreviate( r.input ) << "\n";
 
             if ( r.f.args != r.g.args )
             {
@@ -213,13 +270,17 @@ namespace brq
         fcmp_result< decltype( g( args... ) ), decltype( args )... > r;
         r.f.args = r.input = std::tuple{ args... };
 
-        TRACE( r.input );
+        brq::abbreviate input_args( r.input );
+
         fcmp_call( f, r.f.args, r.f.retval, r.f.except, r.f.nsec );
+        auto timeout_usec = std::max( int64_t( 50000 ), r.f.nsec / 2 );
+
+        TRACE( input_args, timeout_usec );
 
         int retry = 3;
         do
         {
-            fcmp_itimer( std::max( int64_t( 50000 ), r.f.nsec / 2 ) );
+            fcmp_itimer( timeout_usec );
             r.g.args = std::tuple{ args... };
             fcmp_call( g, r.g.args, r.g.retval, r.g.except, r.g.nsec );
             fcmp_itimer( 0 );
