@@ -243,7 +243,7 @@ namespace brq
     {
         struct ::timespec now;
 
-        if ( clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &now ) )
+        if ( clock_gettime( CLOCK_MONOTONIC, &now ) )
             perror( "clock_gettime" ), std::exit( 1 );
 
         return int64_t( now.tv_sec ) * 1'000'000'000 + now.tv_nsec;
@@ -271,19 +271,15 @@ namespace brq
         r.f.args = r.input = std::tuple{ args... };
 
         brq::abbreviate input_args( r.input );
+        TRACE( input_args );
 
         fcmp_call( f, r.f.args, r.f.retval, r.f.except, r.f.nsec );
-        auto timeout_usec = std::max( int64_t( 50000 ), r.f.nsec / 2 );
-
-        TRACE( input_args, timeout_usec );
 
         int retry = 3;
         do
         {
-            fcmp_itimer( timeout_usec );
             r.g.args = std::tuple{ args... };
             fcmp_call( g, r.g.args, r.g.retval, r.g.except, r.g.nsec );
-            fcmp_itimer( 0 );
         }
         while ( retry-- && r.g.nsec > timeout_factor * r.f.nsec );
 
