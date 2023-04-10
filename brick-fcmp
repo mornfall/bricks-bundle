@@ -2,6 +2,7 @@
 #include <brick-assert>
 #include <brick-string>
 #include <brick-enumerate>
+#include <sys/time.h>
 
 namespace brq
 {
@@ -78,12 +79,6 @@ namespace brq
         return p;
     }
 
-    template< typename... args_t >
-    struct fcmp_input
-    {
-        std::tuple< args_t... > args;
-    };
-
     std::type_index except_type( std::exception_ptr eptr )
     {
         try
@@ -116,43 +111,58 @@ namespace brq
     };
 
     template< typename retval_t, typename... args_t >
+    struct fcmp_call_result
+    {
+        std::tuple< args_t... > args;
+        std::exception_ptr except;
+        retval_t retval;
+        int64_t nsec;
+    };
+
+    constexpr int timeout_factor = 50;
+
+    template< typename retval_t, typename... args_t >
     struct fcmp_result : fcmp_base
     {
-        fcmp_input< args_t... > input;
-        std::tuple< args_t... > f_args, g_args;
-        retval_t f_retval, g_retval;
-        std::optional< int > timeout;
-        std::exception_ptr f_except, g_except;
+        std::tuple< args_t... > input;
+        fcmp_call_result< retval_t, args_t... > f, g;
 
         bool is_match() const override
         {
-            return f_args == g_args &&
-                   f_retval == g_retval &&
-                   !timeout.has_value() &&
-                   except_type_eq( f_except, g_except );
+            return g.args == f.args &&
+                   g.retval == f.retval &&
+                   g.nsec < timeout_factor * f.nsec &&
+                   except_type_eq( g.except, f.except );
         }
 
         friend brq::string_builder &operator<<( brq::string_builder &b, const fcmp_result &r )
         {
             b << "\n";
-            b << "input arguments: " << r.input.args << "\n";
+            b << "input arguments: " << r.input << "\n";
 
-            if ( r.f_args != r.g_args )
+            if ( r.f.args != r.g.args )
             {
                 b << "output arguments:\n"
-                  << "  expected: " << r.f_args << "\n"
-                  << "  actual: " << r.g_args << "\n";
+                  << "  expected: " << r.f.args << "\n"
+                  << "  actual:   " << r.g.args << "\n";
             }
 
-            if ( r.f_retval != r.g_retval )
+            if ( r.f.retval != r.g.retval )
             {
                 b << "return value:\n"
-                  << "  expected: " << r.f_retval << "\n"
-                  << "  actual: " << r.g_retval << "\n";
+                  << "  expected: " << r.f.retval << "\n"
+                  << "  actual:   " << r.g.retval << "\n";
             }
 
-            auto f_eid = except_type( r.f_except );
-            auto g_eid = except_type( r.g_except );
+            if ( r.f.nsec * timeout_factor < r.g.nsec )
+            {
+                b << "running time:\n"
+                  << "  expected: <" << r.f.nsec / 1000000.0 * timeout_factor << "ms\n"
+                  << "  actual:    " << r.g.nsec / 1000000.0 << "ms\n";
+            }
+
+            auto f_eid = except_type( r.f.except );
+            auto g_eid = except_type( r.g.except );
 
             if ( f_eid != g_eid )
             {
@@ -165,8 +175,27 @@ namespace brq
         }
     };
 
-    auto fcmp_call( auto fun, auto &arg, auto &rv, auto &eptr )
+    void fcmp_itimer( int64_t usec )
     {
+        struct ::itimerval stop{};
+        stop.it_value.tv_usec = usec;
+        setitimer( ITIMER_VIRTUAL, &stop, nullptr );
+    }
+
+    int64_t fcmp_clock()
+    {
+        struct ::timespec now;
+
+        if ( clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &now ) )
+            perror( "clock_gettime" ), std::exit( 1 );
+
+        return int64_t( now.tv_sec ) * 1'000'000'000 + now.tv_nsec;
+    }
+
+    auto fcmp_call( auto fun, auto &arg, auto &rv, auto &eptr, auto &nsec )
+    {
+        int64_t start = fcmp_clock();
+
         try
         {
             rv = std::apply( fun, arg );
@@ -175,16 +204,28 @@ namespace brq
         {
             eptr = std::current_exception();
         }
+
+        nsec = fcmp_clock() - start;
     }
 
     auto fcmp( auto f, auto g, auto... args )
     {
         fcmp_result< decltype( g( args... ) ), decltype( args )... > r;
+        r.f.args = r.input = std::tuple{ args... };
 
-        r.f_args = r.g_args = r.input.args = std::tuple{ args... };
-        TRACE( r.input.args );
-        fcmp_call( f, r.f_args, r.f_retval, r.f_except );
-        fcmp_call( g, r.g_args, r.g_retval, r.g_except );
+        TRACE( r.input );
+        fcmp_call( f, r.f.args, r.f.retval, r.f.except, r.f.nsec );
+
+        int retry = 3;
+        do
+        {
+            fcmp_itimer( std::max( int64_t( 50000 ), r.f.nsec / 2 ) );
+            r.g.args = std::tuple{ args... };
+            fcmp_call( g, r.g.args, r.g.retval, r.g.except, r.g.nsec );
+            fcmp_itimer( 0 );
+        }
+        while ( retry-- && r.g.nsec > timeout_factor * r.f.nsec );
+
         brq::trace_clear();
 
         return r;
