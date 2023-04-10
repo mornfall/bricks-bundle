@@ -224,10 +224,11 @@ namespace brq
                                   std::tuple_cat( prefix, tuple_drop( vals ) ) );
             }
 
-            if ( !BRICK_FORCE( std::get< 0 >( vals ) ) )
+            if ( auto val = BRICK_FORCE( std::get< 0 >( vals ) ); !val )
             {
                 assert_failed f( l );
-                trace_format< true >( f, names, vals );
+                trace_format< true >( f, names,
+                                      std::tuple_cat( std::tie( val ), tuple_drop( vals ) ) );
                 assert_signal( f );
             }
         }
