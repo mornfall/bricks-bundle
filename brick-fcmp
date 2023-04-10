@@ -262,7 +262,7 @@ namespace brq
             eptr = std::current_exception();
         }
 
-        nsec = fcmp_clock() - start;
+        nsec = std::max( fcmp_clock() - start, int64_t( 1000 ) );
     }
 
     auto fcmp( auto f, auto g, auto... args )
