@@ -24,6 +24,7 @@
 
 #include "brick-min"
 #include <array>
+#include <cmath>
 
 #ifdef __divine__
 #include <sys/cdefs.h>
@@ -248,8 +249,15 @@ namespace brq
                 return false;
 
             b << "[" << this->level( level ) << "] ";
+
             if ( _print_location )
-                b << location.filename() << ":" << location.line << ": ";
+            {
+                b << location.filename() << ":";
+                for ( int i = std::log( location.line ) / std::log( 10 ); i < 4; ++i )
+                    b << " ";
+                b << location.line << ": ";
+            }
+
             if ( _print_tid )
                 b << "[" << pthread_self() << "] ";
 
