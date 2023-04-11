@@ -374,7 +374,7 @@ namespace brq
     inline struct ::sigaction trace_prevsig[ 32 ];
     inline auto trace_siglist = { SIGINT, SIGQUIT, SIGILL, SIGABRT,
                                   SIGFPE, SIGBUS, SIGSYS, SIGSEGV,
-                                  SIGTERM, SIGXCPU };
+                                  SIGTERM, SIGXCPU, SIGALRM, SIGVTALRM };
 
     inline void trace_sighandler( int sig, siginfo_t *, void * )
     {
@@ -399,9 +399,7 @@ namespace brq
         sa.sa_flags = SA_ONSTACK;
         sigemptyset( &sa.sa_mask );
 
-        for ( auto sig : { SIGINT, SIGQUIT, SIGILL, SIGABRT,
-                           SIGFPE, SIGBUS, SIGSYS, SIGSEGV,
-                           SIGTERM, SIGXCPU } )
+        for ( auto sig : trace_siglist )
             ::sigaction( sig, &sa, trace_prevsig + sig );
     }
 #endif
