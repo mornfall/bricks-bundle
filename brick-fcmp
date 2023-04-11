@@ -283,14 +283,14 @@ namespace brq
         }
         while ( retry-- && r.g.nsec > timeout_factor * r.f.nsec );
 
-        brq::trace_clear();
-
         return r;
     }
 
     void fcmp_assert( auto f, auto g, auto && ... args )
     {
         auto match = fcmp( f, g, std::forward< decltype( args ) >( args )... );
+        brq::trace_clear();
         ASSERT( match );
+        brq::trace_clear();
     }
 }
