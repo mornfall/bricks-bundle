@@ -255,15 +255,50 @@ namespace brq::numeric
             }
         }
 
-        friend auto operator<=>( const nat &a, const nat &b )
+        friend auto compare_short_long( const nat &a, const nat &b )
         {
-            auto len = std::max( a.capacity(), b.capacity() );
+            ASSERT( a.is_short() );
+            ASSERT( !b.is_short() );
 
-            for ( int i = len; i >= 0; --i )
-                if ( a.digit( i ) != b.digit( i ) )
-                    return a.digit( i ) <=> b.digit( i );
+            for ( int i = b.capacity() - 1; i >= 1; --i )
+                if ( b.digit_fast( i ) )
+                    return std::strong_ordering::less;
+
+            return a.short_digit() <=> b.digit_fast( 0 );
+        }
+
+        friend auto compare_long_long( const nat &a, const nat &b )
+        {
+            ASSERT_LEQ( a.capacity(), b.capacity() );
+
+            int i = b.capacity() - 1;
+            int a_cap = a.capacity();
+
+            for ( ; i >= a_cap; -- i )
+                if ( b.digit_fast( i ) )
+                    return std::strong_ordering::less;
+
+            for ( ; i >= 0; --i )
+                if ( auto r = a.digit_fast( i ) <=> b.digit_fast( i ); r != 0 )
+                    return r;
 
             return std::strong_ordering::equal;
+        }
+
+        friend auto operator<=>( const nat &a, const nat &b )
+        {
+            if ( a.is_short() && b.is_short() )
+                return a.short_digit() <=> b.short_digit();
+
+            if ( a.is_short() )
+                return compare_short_long( a, b );
+            if ( b.is_short() )
+                return 0 <=> compare_short_long( b, a );
+
+            if ( a.capacity() < b.capacity() )
+                return compare_long_long( a, b );
+            else
+                return 0 <=> compare_long_long( b, a );
         }
 
         friend bool operator==( const nat &a, const nat &b ) /* optimize? */
