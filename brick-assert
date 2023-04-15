@@ -89,12 +89,13 @@ constexpr bool brick_enable_assertions = true; /* must be global, unfortunately 
 
 #else
 
-#define BRICK_ASSERT_BIN(op, inv, ...) \
+#define BRICK_ASSERT_BIN(op, inv, x, y, ...) \
     ::brq::assert_bin_fn< brick_enable_assertions > \
                         ( BRICK_LOCATION, \
                           []( const auto &a, const auto &b ) { return a op b; }, \
-                          #op, std::tuple{ BRICK_SHARP_0( __VA_ARGS__  ) }, \
-                               std::forward_as_tuple( __VA_ARGS__ ) )
+                          #op, std::tuple{ #x, #y __VA_OPT__(, BRICK_SHARP_0( __VA_ARGS__  ) ) }, \
+                               std::forward_as_tuple( BRICK_DELAY( x ), BRICK_DELAY( y ) \
+                                                      __VA_OPT__(, __VA_ARGS__ ) ) )
 
 #define ASSERT(...)     BRICK_ASSERT( __VA_ARGS__ )
 #define ASSERT_EQ(...)  BRICK_ASSERT_BIN( ==, !=, __VA_ARGS__ )
@@ -261,14 +262,27 @@ namespace brq
         {
             bool pass;
 
-            const auto &a = std::get< 0 >( vals );
-            const auto &b = std::get< 1 >( vals );
-
-            using a_t = std::remove_reference_t< decltype( a ) >;
-            using b_t = std::remove_reference_t< decltype( b ) >;
+            const auto &a_box = std::get< 0 >( vals );
+            const auto &b_box = std::get< 1 >( vals );
 
             std::string_view a_str = std::get< 0 >( names ),
                              b_str = std::get< 1 >( names );
+
+            if ( !singleton< assert_config >().quiet )
+            {
+                std::tuple prefix{ "assert ", a_str, " ", op_str, " ", b_str,
+                                   sizeof...( names_t ) > 2 ? ": " : "" };
+
+                trace_fn< true >( trace_level::debug, l,
+                                  std::tuple_cat( prefix, tuple_drop< 2 >( names ) ),
+                                  std::tuple_cat( prefix, tuple_drop< 2 >( vals ) ) );
+            }
+
+            auto &&a = BRICK_FORCE( a_box );
+            auto &&b = BRICK_FORCE( b_box );
+
+            using a_t = std::remove_reference_t< decltype( a ) >;
+            using b_t = std::remove_reference_t< decltype( b ) >;
 
             if constexpr ( std::is_integral_v< a_t > && std::is_integral_v< b_t > )
             {
@@ -293,9 +307,6 @@ namespace brq
 
                 assert_signal( f );
             }
-
-            if ( !singleton< assert_config >().quiet )
-                trace_fn< true >( trace_level::debug, l, names, vals );
         }
     }
 
