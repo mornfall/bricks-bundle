@@ -292,6 +292,125 @@ namespace brq::enumerate
         return r;
     }
 
+    template< typename T, typename = void >
+    struct mk;
+
+    template< typename T >
+    struct mk< T, decltype( T::enumerate( nat() ), void( 0 ) ) >
+    {
+        static auto get( nat index ) { return T::enumerate( index ); }
+    };
+
+    template< typename T >
+    struct mk< T, std::enable_if_t< std::is_signed_v< T > > >
+    {
+        static auto get( nat index )
+        {
+            return index % 2 == 0 ? T( index / 2 ) : -T( index / 2 );
+        }
+    };
+
+    template< typename T >
+    struct mk< T, std::enable_if_t< std::is_unsigned_v< T > > >
+    {
+        static T get( nat index ) { return index; }
+    };
+
+    template< typename... args_t >
+    struct mk< std::tuple< args_t... > >
+    {
+        template< typename T, std::size_t... type_indices >
+        static auto recurse( std::index_sequence< type_indices... >, T value_indices )
+        {
+            return std::tuple< args_t... >
+            {
+                mk< args_t >::get( std::get< type_indices >( value_indices ) )...
+            };
+        }
+
+        static auto get( nat index )
+        {
+            auto indices = tuple< sizeof...( args_t ) >( index );
+            return recurse( std::index_sequence_for< args_t... >(), indices );
+        }
+    };
+
+    template< typename T >
+    struct mk< T, decltype( typename T::key_type(), typename T::mapped_type(), void( 0 ) ) >
+    {
+        static auto get( nat index )
+        {
+            T result;
+
+            for ( auto [ k, v ] : map( index ) )
+                result.emplace( mk< typename T::key_type >::get( k ),
+                                mk< typename T::mapped_type >::get( v ) );
+
+            return result;
+        }
+    };
+
+    template< typename T >
+    struct mk< T, decltype( T().push_back( std::declval< typename T::value_type >() ), void( 0 ) ) >
+    {
+        static auto get( nat index )
+        {
+            T result;
+
+            for ( auto i : list( index ) )
+                result.push_back( mk< typename T::value_type >::get( i ) );
+
+            return result;
+        }
+    };
+
+    template< template< typename... > class variant_t, typename... types_t >
+    struct mk< variant_t< types_t... >,
+               decltype( std::declval< variant_t< types_t... > >().valueless_by_exception(), void( 0 ) ) >
+    {
+        using result_t = variant_t< types_t... >;
+
+        template< std::size_t I >
+        static result_t recurse( int t_idx, nat v_idx )
+        {
+            if constexpr ( I < sizeof...( types_t ) )
+            {
+                using T = std::tuple_element_t< I, std::tuple< types_t... > >;
+                if ( t_idx == I )
+                    return result_t( std::in_place_index< I >, mk< T >::get( v_idx ) );
+                else
+                    return recurse< I + 1 >( t_idx, v_idx );
+            }
+            else
+                __builtin_unreachable();
+        }
+
+        static auto get( nat index )
+        {
+            auto [ v_idx, t_idx ] = divmod( index, sizeof...( types_t ) );
+            return recurse< 0 >( t_idx, v_idx );
+        }
+    };
+
+    template< template< typename > class optional_t, typename type_t >
+    struct mk< optional_t< type_t >,
+               decltype( std::declval< optional_t< type_t > >().has_value(), void( 0 ) ) >
+    {
+        static optional_t< type_t > get( nat index )
+        {
+            if ( index == 0 )
+                return {};
+            else
+                return mk< type_t >::get( index - 1 );
+        }
+    };
+
+    template< typename T >
+    T generic( nat index )
+    {
+        return mk< T >::get( index );
+    }
+
     auto graph( nat index ) /* unorientend */
     {
         std::vector< std::pair< nat, nat > > graph;
@@ -366,4 +485,7 @@ namespace brq
     auto set_enum( nat index ) { return enumerate::set( index ); }
     auto map_enum( nat index ) { return enumerate::map( index ); }
     auto int_enum( nat index ) { return enumerate::integer( index ); }
+
+    template< typename T >
+    auto enum_gen( nat index ) { return enumerate::generic< T >( index ); }
 }
