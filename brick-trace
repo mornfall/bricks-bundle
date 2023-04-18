@@ -318,14 +318,16 @@ namespace brq
         else
         {
             const auto &a = std::get< 0 >( vals );
+            using a_type = std::decay_t< decltype( a ) >;
             std::string_view a_name = std::get< 0 >( names );
 
             string_builder a_str;
             format_arg< true >( a_str, a );
             bool literal = a_str.data() == a_name ||
                            a_name.substr( 1, a_name.size() - 2 ) == a_str.data();
+            bool string = std::is_same_v< a_type, const char * >;
 
-            if ( comma && !literal )
+            if ( comma && !( literal && string ) )
                 b << ", ";
 
             if ( literal )
@@ -333,7 +335,8 @@ namespace brq
             else
                 b << a_name << " → " << a_str;
 
-            return trace_format< true >( b, tuple_drop( names ), tuple_drop( vals ), comma || !literal );
+            return trace_format< true >( b, tuple_drop( names ), tuple_drop( vals ),
+                                            !literal || !string );
         }
     }
 
