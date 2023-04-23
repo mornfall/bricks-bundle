@@ -183,9 +183,12 @@ namespace brq
             return *this;
         }
 
-        string_builder &operator<<( char c ) noexcept
+        template< typename char_t >
+        std::enable_if_t< std::is_same_v< char_t, char >, string_builder >
+        &operator<<( const char_t &c ) noexcept
         {
             *this << int( c );
+
             if ( std::isprint( c ) )
             {
                 if ( !_make_space( 3 ) ) return *this;
@@ -195,6 +198,11 @@ namespace brq
                 _d.buffer[ _d.offset ] = 0;
             }
             return *this;
+        }
+
+        string_builder &operator<<( bool b ) noexcept
+        {
+            return *this << ( b ? "true" : "false" );
         }
 
         string_builder &operator<<( std::byte c ) noexcept
@@ -251,7 +259,7 @@ namespace brq
 
         template< typename V >
         auto operator<<( const V &val ) noexcept
-            -> std::enable_if_t< std::is_arithmetic_v< V >,
+            -> std::enable_if_t< std::is_arithmetic_v< V > && !std::is_same_v< V, char >,
                                  decltype( std::to_chars( _d.buffer, _d.buffer, val ), *this ) >
         {
             int cap = 16;
