@@ -515,7 +515,7 @@ namespace brq::enumerate
     {
         nat start, cutoff, last, base;
 
-        static const int prec = 40;
+        static constexpr int prec = 40;
         static inline const nat one = nat( 1 ) << prec;
 
         exp_dist( nat c, nat l, double b )
