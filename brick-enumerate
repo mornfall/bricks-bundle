@@ -166,8 +166,42 @@ namespace brq::enumerate
             b = index.nth_root( n );
             index -= b.pow( n );
         }
+        else
+        {
+            auto max_b = *std::max_element( bounds.begin(), bounds.end() );
 
-        /* TODO fast forward for the bounded case */
+            if ( max_b == 0 )
+                return tuple< n, unbounded >( index );
+
+            ASSERT( tuple_bound( bounds ) == 0 || index < tuple_bound( bounds ) );
+
+            bounds_t b_capped, b_count;
+            int unbounded = 0;
+
+            for ( unsigned i = 0; i < bounds.size(); ++i )
+                if ( auto bi = bounds[ i ] )
+                    b_count[ i ] = b_capped[ i ] = bi;
+                else
+                {
+                    b_capped[ i ] = max_b;
+                    b_count[ i ] = 1;
+                    ++ unbounded;
+                }
+
+            auto offset = tuple_bound( b_capped );
+            auto count  = tuple_bound( b_count );
+            DEBUG( offset, count );
+
+            if ( index > offset )
+            {
+                b = max_b + 1;
+                index -= offset;
+                auto skip_b = ( index / count ).nth_root( unbounded );
+                ASSERT_LEQ( 0, skip_b );
+                b += skip_b;
+                index -= count * skip_b.pow( unbounded );
+            }
+        }
 
         auto next_block = [&]( auto b ) { return tuple_count( b, n, bounds ); };
         std::tie( index, b ) = find_block( index, b, next_block );
