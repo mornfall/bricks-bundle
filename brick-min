@@ -279,7 +279,13 @@ namespace brq
         }
     };
 
-    struct unit {};
+    struct unit_t
+    {
+        bool operator==( const unit_t & ) const = default;
+        bool operator<=>( const unit_t & ) const = default;
+    };
+
+    inline unit_t unit;
 
     struct fallback
     {
