@@ -455,14 +455,15 @@ namespace brq::sql
         {
             std::vector< int > formats( _d.params.size(), 1 );
 
-            DEBUG( _d.query.buffer(), _d.params.size() ? _d.debug.buffer() : "" );
+            DEBUG( _d.query.data(), _d.params.size() ? _d.debug.data() : "" );
             _d.conn->_notices.clear();
-            _d.result = PQexecParams( _d.conn->handle(), _d.query.buffer(), _d.params.size(), nullptr,
-                                      _d.params.data(), _d.lengths.data(), formats.data(), 1 );
+            _d.result = PQexecParams( _d.conn->handle(), brq::c_str( _d.query.data() ),
+                                      _d.params.size(), nullptr, _d.params.data(),
+                                      _d.lengths.data(), formats.data(), 1 );
 
             auto r = PQresultStatus( _d.result );
             if ( r != PGRES_COMMAND_OK && r != PGRES_TUPLES_OK && r != PGRES_COPY_IN )
-                raise< error >() << "executing " << _d.query.buffer() << ": " << _d.conn->errmsg();
+                raise< error >() << "executing " << _d.query.data() << ": " << _d.conn->errmsg();
         }
 
         template< typename list_t >
@@ -614,7 +615,7 @@ namespace brq::sql
 
             savepoint( txn_base *t, std::string_view get_name ) : _txn( t ), _name( get_name )
             {
-                _txn->exec( brq::format( "savepoint ", get_name ).buffer() );
+                _txn->exec( brq::format( "savepoint ", get_name ).data() );
             }
 
             ~savepoint()
@@ -632,13 +633,13 @@ namespace brq::sql
 
             void rollback()
             {
-                _txn->exec( brq::format( "rollback to savepoint ", _name ).buffer() );
+                _txn->exec( brq::format( "rollback to savepoint ", _name ).data() );
                 _txn = nullptr;
             }
 
             void release()
             {
-                _txn->exec( brq::format( "release savepoint ", _name ).buffer() );
+                _txn->exec( brq::format( "release savepoint ", _name ).data() );
                 _txn = nullptr;
             }
         };
@@ -688,7 +689,7 @@ namespace brq::sql
             txn_base &_txn;
             autoexec( autoexec && ) = default;
             autoexec( txn_base &t ) : _txn( t ) {}
-            ~autoexec() { if ( _d.buffer ) _txn.exec( _d.buffer ); }
+            ~autoexec() { if ( _d.buffer ) _txn.exec( data() ); }
 
             template< typename T >
             autoexec &operator<<( const T &x )

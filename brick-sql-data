@@ -615,7 +615,7 @@ namespace brq::sql
         print_list( s, typename enum_t::values().map( [&]( auto c ) { return c.get_name( c ); } ),
                     "', '", "('", "')" );
         s << "; end if; end; $$";
-        txn.exec( s.buffer() );
+        txn.exec( s.data() );
     }
 
     enum class lifetime { persistent, session, transaction, view };
@@ -801,7 +801,7 @@ namespace brq::sql
 
             if ( view::is_updatable )
                 s << " with check option";
-            txn.exec( s.buffer() );
+            txn.exec( s.data() );
         }
 
         int i = 0;

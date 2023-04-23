@@ -339,7 +339,7 @@ namespace brq::sql
 
             s << " join " << tab_right::declare( tab_right() ) << " on ";
             if constexpr ( std::is_same_v< on_t, brq::nil > )
-                s << cond.buffer();
+                s << cond.data();
             else
                 sql::print( s, _join_on, id );
         }
@@ -652,12 +652,12 @@ namespace brq::sql
 
             s << ( first ? " set " : ", " );
 
-            auto fmt_update = [&]( auto col, auto arg ) -> std::string
+            auto fmt_update = [&]( auto col, auto arg )
             {
                 string_builder b;
                 b << col.get_name( col ) << " = ";
                 sql::print( b, arg, id );
-                return b.buffer();
+                return std::string( b.data() );
             };
 
             print_list( s, brq::zip( fmt_update, cols_t(), _args ) );
