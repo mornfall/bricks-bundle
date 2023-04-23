@@ -326,6 +326,37 @@ namespace brq::enumerate
         return r;
     }
 
+    auto permutation_param( int n, nat index )
+    {
+        std::vector< nat > result( n );
+        std::iota( result.begin(), result.end(), 0 );
+
+        while ( n > 0 )
+        {
+            brq::nat swap_idx;
+            std::tie( index, swap_idx ) = divmod( index, n );
+            n --;
+            std::swap( result[ n ], result[ int( swap_idx ) ] );
+        }
+
+        return result;
+    }
+
+    auto permutation( nat index )
+    {
+        int n = 0;
+        nat count = 1;
+
+        while ( index >= count )
+        {
+            index -= count;
+            n ++;
+            count *= n;
+        }
+
+        return permutation_param( n, index );
+    }
+
     template< typename T, typename = void >
     struct mk;
 
