@@ -416,6 +416,20 @@ namespace brq::enumerate
     };
 
     template< typename T >
+    struct mk< T, std::enable_if_t< std::is_same_v< typename T::key_type, typename T::value_type > > >
+    {
+        static auto get( nat index )
+        {
+            T result;
+
+            for ( auto k : set( index ) )
+                result.emplace( mk< typename T::key_type >::get( k ) );
+
+            return result;
+        }
+    };
+
+    template< typename T >
     struct mk< T, decltype( T().push_back( std::declval< typename T::value_type >() ), void( 0 ) ) >
     {
         static auto get( nat index )
