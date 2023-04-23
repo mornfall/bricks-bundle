@@ -283,6 +283,11 @@ namespace brq
     {
         bool operator==( const unit_t & ) const = default;
         bool operator<=>( const unit_t & ) const = default;
+
+        friend auto &operator<<( string_builder &b, unit_t )
+        {
+            return b << "()";
+        }
     };
 
     inline unit_t unit;
