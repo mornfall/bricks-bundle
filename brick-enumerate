@@ -64,7 +64,7 @@ namespace brq::enumerate
             if ( i == d && bounds[ i ] && bounds[ i ] <= b )
                 return 0;
 
-            bound_t choices = i == d ? 1 : i < d ? b + 1 : b;
+            bound_t choices = i == d ? bound_t( 1 ) : i < d ? b + 1 : b;
             total *= min_nonzero( bound_t( bounds[ i ] ), choices );
         }
 
