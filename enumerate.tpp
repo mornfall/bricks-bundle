@@ -3,17 +3,20 @@
 #include "brick-unit"
 #include "brick-nat"
 #include "brick-enumerate"
+#include <set>
 
 auto enum_prefix( auto expect, auto do_enum )
 {
     return [=]
     {
         decltype( expect ) enumerated;
+        using elem_t = std::decay_t< decltype( *expect.begin() ) >;
 
         for ( int i = 0; i < expect.size(); ++i )
         {
-            ASSERT( !enumerated.contains( do_enum( i ) ), i, do_enum( i ) );
-            enumerated.insert( do_enum( i ) );
+            elem_t elem = do_enum( i );
+            ASSERT( !enumerated.contains( elem ), i, elem );
+            enumerated.insert( elem );
         }
 
         for ( auto i : enumerated )
@@ -33,7 +36,6 @@ int main()
     using t2_t   = std::array< brq::nat, 2 >;
     using t3_t   = std::array< brq::nat, 3 >;
     using list_t = std::vector< brq::nat >;
-    using set_t  = std::set< brq::nat >;
 
     std::set< t2_t > t2_b_33 =
     {
@@ -79,7 +81,7 @@ int main()
         { 2, 0, 2 }, { 2, 1, 2 }, { 2, 2, 2 }
     };
 
-    std::set< set_t > sets_3 =
+    std::set< list_t > sets_3 =
     {
         {}, { 0 }, { 1 }, { 0, 1 }, { 2 }, { 0, 2 }, { 1, 2 }, { 0, 1, 2 }
     };
