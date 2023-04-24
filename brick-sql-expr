@@ -414,14 +414,14 @@ BRICK_SQL_OP( | )
     template< typename P, typename O >
     auto window( P partition, O order )
     {
-        if constexpr ( std::is_same_v< O, brq::unit > )
+        if constexpr ( std::is_same_v< O, brq::unit_t > )
             return where_expr{ where_operator( "partition by" ), partition };
         else
             return where_expr{ where_operator( "partition by" ), partition,
                                where_operator( "order by" ), order };
     }
 
-    template< typename F, typename P, typename O = brq::unit >
+    template< typename F, typename P, typename O = brq::unit_t >
     auto over( F function, P partition, O order = O() )
     {
         auto w = window( partition, order );
