@@ -106,8 +106,8 @@ constexpr bool brick_enable_assertions = true; /* must be global, unfortunately 
 
 #endif
 
-#define UNREACHABLE(...)   BRICK_ASSERT( false, __VA_ARGS__ )
-#define NOT_IMPLEMENTED()  BRICK_ASSERT( false, "missing implementation" )
+#define UNREACHABLE(...)   ( BRICK_ASSERT( false, __VA_ARGS__ ), __builtin_trap() )
+#define NOT_IMPLEMENTED()  ( BRICK_ASSERT( false, "missing implementation" ), __builtin_trap() )
 
 #define BRICK_LOCATION ::brq::trace_location{ __LINE__, __FILE__ }
 #define BRICK_SHARP( ... ) BRICK_SHARP_0( __VA_ARGS__ )
