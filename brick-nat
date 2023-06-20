@@ -3,6 +3,7 @@
 #include <brick-bitlevel>
 #include <brick-string>
 #include <cmath>
+#include <concepts>
 
 namespace brq::numeric
 {
@@ -19,6 +20,9 @@ namespace brq::numeric
 
     template< typename type >
     using make_unsigned_t = typename make_unsigned< type >::type;
+
+    template< typename T > concept nat_like = is_integral_v< typename T::digit_t >;
+    template< typename T > concept int_like = nat_like< T > || is_integral_v< T >;
 
     template< template< typename > class alloc_t = std_malloc_with_size >
     struct nat
@@ -301,7 +305,7 @@ namespace brq::numeric
                 return 0 <=> compare_long_long( b, a );
         }
 
-        friend bool operator==( const nat &a, const nat &b ) /* optimize? */
+        friend bool operator==( const int_like auto &a, const int_like auto &b ) /* optimize? */
         {
             return ( a <=> b ) == std::strong_ordering::equal;
         }
@@ -626,8 +630,8 @@ namespace brq::numeric
             return { q, u >> bitshift };
         }
 
-        friend nat operator/( const nat &a, const nat &b ) { return std::get< 0 >( divmod( a, b ) ); }
-        friend nat operator%( const nat &a, const nat &b ) { return std::get< 1 >( divmod( a, b ) ); }
+        friend nat operator/( const auto &a, const auto &b ) { return std::get< 0 >( divmod( a, b ) ); }
+        friend nat operator%( const auto &a, const auto &b ) { return std::get< 1 >( divmod( a, b ) ); }
 
         template< typename exp_t >
         nat pow( exp_t exp )
@@ -719,6 +723,28 @@ namespace brq::numeric
             }
 
             return r;
+        }
+
+        operator uint64_t() const { return digit( 0 ); }
+
+        friend auto operator<=>( int_like auto const &a, int_like auto const &b )
+        {
+            return static_cast< const nat & >( a ) <=> static_cast< const nat & >( b );
+        }
+
+        friend nat operator+( const int_like auto &a, const int_like auto &b )
+        {
+            return static_cast< const nat & >( a ) + static_cast< const nat & >( b );
+        }
+
+        friend auto operator-( const int_like auto &a, const int_like auto &b )
+        {
+            return static_cast< const nat & >( a ) - static_cast< const nat & >( b );
+        }
+
+        friend auto operator*( const int_like auto &a, const int_like auto &b )
+        {
+            return static_cast< const nat & >( a ) * static_cast< const nat & >( b );
         }
     };
 }
