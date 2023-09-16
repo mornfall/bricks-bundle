@@ -2,6 +2,7 @@
 #include <brick-assert>
 #include <brick-string>
 #include <brick-enumerate>
+#include <typeindex>
 #include <sys/time.h>
 
 namespace brq
