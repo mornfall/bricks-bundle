@@ -146,9 +146,9 @@ namespace brq
             {
                 if ( i < 16 )
                     b << ( i ? ", " : "[ " ) << brq::abbreviate( *it );
-                if ( i == 16 && a.col.size() > 24 )
+                else if ( i == 16 && a.col.size() > 24 )
                     b << ", …";
-                if ( a.col.size() - i < 8 )
+                else if ( a.col.size() - i < 8 )
                     b << ", " << brq::abbreviate( *it );
             }
 
