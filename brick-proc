@@ -132,20 +132,20 @@ namespace brq
         return ss.buffer();
     }
 
-    struct fd
+    struct unique_fd
     {
         int _number = -1;
         int number() const { return _number; }
 
-        static fd from_raw( int n )
+        static unique_fd from_raw( int n )
         {
-            fd r;
+            unique_fd r;
             r._number = n;
             return r;
         }
 
         template< typename... args_t >
-        static fd open( args_t... args )
+        static unique_fd open( args_t... args )
         {
             int raw = ::open( args... );
 
@@ -155,7 +155,7 @@ namespace brq
                 return from_raw( raw );
         }
 
-        static fd dup( int n )
+        static unique_fd dup( int n )
         {
             return from_raw( ::dup( n ) );
         }
@@ -173,16 +173,16 @@ namespace brq
             _number = n;
         }
 
-        fd() = default;
-        fd( const fd & ) = delete;
-        fd &operator=( const fd &rhs ) = delete;
+        unique_fd() = default;
+        unique_fd( const unique_fd & ) = delete;
+        unique_fd &operator=( const unique_fd &rhs ) = delete;
 
-        fd( fd &&rhs ) : _number( rhs._number )
+        unique_fd( unique_fd &&rhs ) : _number( rhs._number )
         {
             rhs._number = -1;
         }
 
-        fd &operator=( fd &&rhs )
+        unique_fd &operator=( unique_fd &&rhs )
         {
             close();
             _number = rhs._number;
@@ -190,12 +190,12 @@ namespace brq
             return *this;
         }
 
-        ~fd() { close(); }
+        ~unique_fd() { close(); }
     };
 
     struct pipe
     {
-        fd _in, _out;
+        unique_fd _in, _out;
 
         pipe()
         {
@@ -239,8 +239,8 @@ namespace brq
             }
         }
 
-        const fd &read()  const { return _in; }
-        const fd &write() const { return _out; }
+        const unique_fd &read()  const { return _in; }
+        const unique_fd &write() const { return _out; }
 
         void attach_stdout() { ::dup2( write().number(), STDOUT_FILENO ); }
         void attach_stderr() { ::dup2( write().number(), STDERR_FILENO ); }
@@ -388,10 +388,10 @@ namespace brq
             int status = 0;
         } _d;
 
-        const fd &read_fd() const { return _d.from_child.read(); }
-        const fd &write_fd() const { return _d.to_child.write(); }
-        fd take_read_fd()  { return std::move( _d.from_child._in ); }
-        fd take_write_fd() { return std::move( _d.to_child._out ); }
+        const unique_fd &read_fd() const { return _d.from_child.read(); }
+        const unique_fd &write_fd() const { return _d.to_child.write(); }
+        unique_fd take_read_fd()  { return std::move( _d.from_child._in ); }
+        unique_fd take_write_fd() { return std::move( _d.to_child._out ); }
 
         spawn( spawn &&o ) : _d( std::move( o._d ) )
         {
@@ -505,14 +505,15 @@ namespace brq
     template < typename write_t, typename read_t, typename eof_t = void(*)() >
     struct communicate : communicate_base
     {
-        fd fd_out, fd_in;
+        unique_fd fd_out, fd_in;
         const write_t &do_write;
         const read_t &do_read;
         eof_t eof;
         std::array< pollfd, 2 > fdset;
         int res = 0;
 
-        communicate( fd out, fd in, const write_t &w, const read_t &r, eof_t eof = []{} )
+        communicate( unique_fd out, unique_fd in,
+                     const write_t &w, const read_t &r, eof_t eof = []{} )
             : fd_out( std::move( out ) ), fd_in( std::move( in ) ),
               do_write( w ), do_read( r ), eof( eof )
         {
@@ -661,7 +662,7 @@ namespace brq
 
         pipe_read_lines( Yield y ) : yield( y ) {}
 
-        bool operator()( const brq::fd &fd ) const
+        bool operator()( const brq::unique_fd &fd ) const
         {
             int bytes = read( fd.number(), _buffer, BUFFER_SIZE - 1 );
             bool result = bytes > 0;
@@ -732,7 +733,7 @@ namespace brq
             return !_todo.empty();
         }
 
-        io_result operator()( const brq::fd &fd ) const
+        io_result operator()( const brq::unique_fd &fd ) const
         {
             if ( !shift_buffers() )
                 return _closed ? io_result::done : io_result::blocked;
@@ -956,7 +957,7 @@ namespace t_brq
         TEST( noread )
         {
             std::string out;
-            brq::pipethrough( []( const brq::fd & ){ return brq::io_result::done; },
+            brq::pipethrough( []( const brq::unique_fd & ){ return brq::io_result::done; },
                               brq::pipe_read_lines( [&]( auto l ){ out = l; }),
                               "echo", "-e", "lorem ipsum\\nhello world" );
             ASSERT_EQ( out, "hello world" );
@@ -974,19 +975,19 @@ namespace t_brq
         TEST( retval )
         {
             int n = 0;
-            int ret = brq::pipethrough( []( const brq::fd & ){ return brq::io_result::done; },
+            int ret = brq::pipethrough( []( const brq::unique_fd & ){ return brq::io_result::done; },
                                         brq::pipe_read_lines( [&]( auto ){ ++n; }),
                                         "true" );
             ASSERT_EQ( ret, 0 );
             ASSERT_EQ( n, 0 );
-            ret = brq::pipethrough( []( const brq::fd & ){ return brq::io_result::done; },
+            ret = brq::pipethrough( []( const brq::unique_fd & ){ return brq::io_result::done; },
                                     brq::pipe_read_lines( [&]( auto ){ ++n; }),
                                     "false" );
             ASSERT_LT( 0, ret );
             ASSERT_EQ( n, 0 );
 
             try {
-                ret = brq::pipethrough( []( brq::fd & ){ return brq::io_result::done; },
+                ret = brq::pipethrough( []( brq::unique_fd & ){ return brq::io_result::done; },
                                         brq::pipe_read_lines( [&]( auto ){ ++n; }),
                                         "/dev/null" );
             } catch ( ... ) {
