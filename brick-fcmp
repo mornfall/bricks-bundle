@@ -133,7 +133,7 @@ namespace brq
     };
 
     template< typename coll_t >
-    struct abbreviate< coll_t, std::void_t< typename coll_t::value_type > >
+    struct abbreviate< coll_t, std::void_t< typename coll_t::iterator > >
     {
         const coll_t &col;
         abbreviate( const coll_t &c ) : col( c ) {}
