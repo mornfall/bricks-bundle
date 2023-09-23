@@ -95,6 +95,12 @@ namespace brq
         return { args... };
     }
 
+    template< typename... args_t >
+    construct_error< system_error, args_t... > raise_sys( args_t... args )
+    {
+        return { args... };
+    }
+
     struct finally
     {
         using fun = std::function< void() >;
