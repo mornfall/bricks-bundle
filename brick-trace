@@ -294,7 +294,7 @@ namespace brq
         }
 #endif
 
-        void print( string_builder &b, trace_level level ) noexcept
+        void print( string_builder &b, trace_level level = trace_level::trace ) noexcept
         {
             if ( _use_buffer )
             {
