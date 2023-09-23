@@ -190,6 +190,14 @@ namespace brq
             return *this;
         }
 
+        int seek( off_t offset, int from_pos )
+        {
+            int pos = ::lseek( _number, offset, from_pos );
+            if ( pos == -1 )
+                raise< system_error >() << "seeking in " << _number;
+            return pos;
+        }
+
         ~unique_fd() { close(); }
     };
 
