@@ -142,15 +142,18 @@ namespace brq
         {
             int i = 0;
 
-            for ( auto it = a.col.begin(); it != a.col.end(); ++it, ++i )
-            {
-                if ( i < 16 )
-                    b << ( i ? ", " : "[ " ) << brq::abbreviate( *it );
-                else if ( i == 16 && a.col.size() > 24 )
-                    b << ", …";
-                else if ( a.col.size() - i < 8 )
-                    b << ", " << brq::abbreviate( *it );
-            }
+            if constexpr ( requires { a.col.size(); } )
+                for ( auto it = a.col.begin(); it != a.col.end(); ++it, ++i )
+                {
+                    if ( i < 16 )
+                        b << ( i ? ", " : "[ " ) << brq::abbreviate( *it );
+                    else if ( i == 16 && a.col.size() > 24 )
+                        b << ", …";
+                    else if ( a.col.size() - i < 8 )
+                        b << ", " << brq::abbreviate( *it );
+                }
+            else
+                return b << a.col;
 
             return b << ( i ? " ]" : "[]" );
         }
