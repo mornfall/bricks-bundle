@@ -42,6 +42,8 @@
 #include <unistd.h>
 #include <syslog.h>
 #include <signal.h>
+#include <sys/socket.h>
+#include <sys/wait.h>
 #else
 #include <cstdio>
 #endif
@@ -136,6 +138,8 @@ namespace brq
         return value;
     }
 
+    inline void trace_dump( int fd = 2 ) noexcept;
+
     struct trace
     {
         struct rule_t
@@ -156,6 +160,7 @@ namespace brq
         bool _print_tid = false, _print_location = false, _use_syslog = false, _use_buffer = false;
         char *_syslog_meta = nullptr;
         string_builder _buffer;
+        int _log_socket = -1;
 
         void use_syslog( bool s = true, std::string_view meta = "", int facility = LOG_USER )
         {
@@ -177,6 +182,43 @@ namespace brq
             _use_buffer = s;
             _buffer.clear();
         }
+
+#ifdef __unix__
+        void use_fork()
+        {
+            int fds[ 2 ];
+            socketpair( AF_UNIX, SOCK_SEQPACKET, 0, fds );
+            pid_t pid = fork();
+
+            if ( pid == 0 )
+            {
+                _log_socket = fds[ 0 ];
+                close( fds[ 1 ] );
+                return;
+            }
+
+            int listen_fd = fds[ 1 ];
+            close( fds[ 0 ] );
+            char buffer[ 4096 ];
+
+            while ( true )
+            {
+                int bytes = ::read( listen_fd, buffer, 4096 );
+                if ( bytes == -1 || bytes == 0 )
+                    break; // now what
+                if ( buffer[ 0 ] == 0 ) /* control message */
+                    _buffer.clear(); /* TODO */
+                else
+                    do_buffer( std::string_view( buffer, bytes - 1 ) );
+
+            }
+
+            int status;
+            trace_dump( 2 );
+            waitpid( pid, &status, 0 );
+            std::exit( status );
+        }
+#endif
 
         trace() noexcept( nothrow )
         {
@@ -286,7 +328,7 @@ namespace brq
             if ( _use_syslog )
                 ::syslog( level > trace_level::error ? LOG_DEBUG : LOG_INFO, "%s", b.buffer() );
             else
-                ::write( 2, b.buffer(), b.size() );
+                ::write( _log_socket >= 0 ? _log_socket : 2, b.buffer(), b.size() );
 #else
             std::fwrite( b.buffer(), 1, b.size(), stderr );
             std::fflush( stderr );
@@ -294,13 +336,16 @@ namespace brq
         }
 #endif
 
+        void do_buffer( std::string_view data )
+        {
+            _buffer.rotate( 1024 * 1024, 2 * 1024 * 1024 );
+            _buffer << data << "\n";
+        }
+
         void print( string_builder &b, trace_level level = trace_level::trace ) noexcept
         {
             if ( _use_buffer )
-            {
-                _buffer.rotate( 1024 * 1024, 2 * 1024 * 1024 );
-                _buffer << b.data() << "\n";
-            }
+                do_buffer( b.data() );
             else
                 do_print( b, level );
         }
@@ -388,10 +433,14 @@ namespace brq
 
     inline void trace_clear() noexcept
     {
-        trace()._buffer.clear();
+        char clrmsg = 0;
+        if ( trace()._log_socket >= 0 )
+            write( trace()._log_socket, &clrmsg, 1 );
+        else
+            trace()._buffer.clear();
     }
 
-    inline void trace_dump( int fd = 2 ) noexcept
+    inline void trace_dump( int fd ) noexcept
     {
         auto &buf = trace()._buffer;
 
