@@ -336,8 +336,8 @@ namespace brq
             {
                 assert_failed f( l );
                 f << a_str << " " << op_str << " " << b_str;
-                f << "\n  " << rpad( eqw, a_str ) << " = " << a;
-                f << "\n  " << rpad( eqw, b_str ) << " = " << b;
+                f << "\n  " << rpad( eqw, a_str ) << " = " << printable( a );
+                f << "\n  " << rpad( eqw, b_str ) << " = " << printable( b );
 
                 if constexpr ( sizeof...( names_t ) > 2 )
                     f << "\n  ";
