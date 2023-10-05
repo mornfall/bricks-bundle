@@ -213,6 +213,7 @@ namespace brq
 
             }
 
+            close( listen_fd );
             int status;
             trace_dump( 2 );
             waitpid( pid, &status, 0 );
