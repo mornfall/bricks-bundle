@@ -188,16 +188,8 @@ namespace brq
         std::enable_if_t< std::is_same_v< char_t, char >, string_builder >
         &operator<<( const char_t &c ) noexcept
         {
-            *this << int( c );
-
-            if ( std::isprint( c ) )
-            {
-                if ( !_make_space( 3 ) ) return *this;
-                _d.buffer[ _d.offset++ ] = '\'';
-                _d.buffer[ _d.offset++ ] = c;
-                _d.buffer[ _d.offset++ ] = '\'';
-                _d.buffer[ _d.offset ] = 0;
-            }
+            if ( !_make_space( 1 ) ) return *this;
+            _d.buffer[ _d.offset++ ] = c;
             return *this;
         }
 
@@ -277,6 +269,87 @@ namespace brq
             _d.offset = result.ptr - _d.buffer;
             _d.buffer[ _d.offset ] = 0;
             return *this;
+        }
+
+        static constexpr std::string_view hex_digit = "0123456789abcdef";
+
+        void print_char( char c )
+        {
+            switch ( c )
+            {
+                case '\a': *this << "\\a"; break;
+                case '\b': *this << "\\b"; break;
+                case '\f': *this << "\\f"; break;
+                case '\n': *this << "\\n"; break;
+                case '\r': *this << "\\r"; break;
+                case '\t': *this << "\\t"; break;
+                case '\v': *this << "\\v"; break;
+                case '"': *this << "\\\""; break;
+                case '\\': *this << "\\\\"; break;
+
+                default:
+                    if ( std::isprint( c ) )
+                        *this << c;
+                    else
+                        *this << "\\x"
+                              << hex_digit[ uint8_t( c ) / 16 ]
+                              << hex_digit[ uint8_t( c ) % 16 ];
+            }
+        }
+
+    };
+
+    template< typename type, typename = void >
+    struct printable
+    {
+        const type &ref;
+        bool operator==( const printable &o ) const = default;
+
+        printable( const type &r ) : ref( r ) {}
+
+        friend auto &operator<<( brq::string_builder &b, const printable &e )
+        {
+            return b << e.ref;
+        }
+    };
+
+    template<>
+    struct printable< char >
+    {
+        char c;
+        bool operator==( const printable &o ) const = default;
+
+        printable( char c ) : c( c ) {}
+
+        friend auto &operator<<( brq::string_builder &b, const printable &e )
+        {
+            b << "'";
+            b.print_char( e.c );
+            return b << "'";
+        }
+    };
+
+    template< typename type >
+    struct printable< type, std::enable_if_t< std::is_convertible_v< type, std::string_view > > >
+    {
+        std::string_view s;
+        printable( std::string_view s ) : s( s ) {}
+
+        bool operator==( const printable & ) const = default;
+
+        friend auto &operator<<( brq::string_builder &b, printable e )
+        {
+            b << "\"";
+
+            for ( int i = 0; i < ssize( e.s ); ++i )
+                if ( i < 68 )
+                    b.print_char( e.s[ i ] );
+                else if ( i == 68 && e.s.size() > 80 )
+                    b << "\" { +" << ( e.s.size() - 80 ) << " bytes } \"";
+                else if ( e.s.size() - i < 12 )
+                    b.print_char( e.s[ i ] );
+
+            return b << "\"";
         }
     };
 
