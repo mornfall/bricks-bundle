@@ -429,6 +429,25 @@ namespace brq::enumerate
         }
     };
 
+    template< typename T, std::size_t N >
+    struct mk< std::array< T, N > >
+    {
+        template< std::size_t... type_indices >
+        static auto recurse( std::index_sequence< type_indices... >,
+                             std::array< nat, N > value_indices )
+        {
+            return std::array< T, N >
+            {
+                mk< T >::get( value_indices[ type_indices ] )...
+            };
+        }
+
+        static auto get( nat index )
+        {
+            return recurse( std::make_index_sequence< N >(), tuple< N >( index ) );
+        }
+    };
+
     template< typename T >
     struct mk< T, decltype( T().push_back( std::declval< typename T::value_type >() ), void( 0 ) ) >
     {
