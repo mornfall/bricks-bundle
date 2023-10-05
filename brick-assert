@@ -159,7 +159,36 @@ namespace brq
         ~assert_quiet() { quiet() = was_quiet; }
     };
 
-    struct assert_failed : string_builder
+    struct stacked_error
+    {
+        stacked_error *previous;
+        bool previous_valid = true;
+
+        static inline thread_local stacked_error *active = nullptr;
+
+        stacked_error()
+        {
+            previous = active;
+            active = this;
+        }
+
+        stacked_error( stacked_error &&o )
+            : previous( o.previous )
+        {
+            active = this;
+            o.previous_valid = false;
+        }
+
+        ~stacked_error()
+        {
+            if ( previous_valid )
+                active = previous;
+        }
+
+        virtual const char *describe() const noexcept = 0;
+    };
+
+    struct assert_failed : string_builder, stacked_error
     {
         struct fail_ref
         {
@@ -197,6 +226,7 @@ namespace brq
         }
 
         const char *what() const noexcept { return buffer(); }
+        const char *describe() const noexcept { return buffer(); }
     };
 
     [[noreturn]] inline void assert_signal( assert_failed &err )
@@ -213,7 +243,7 @@ namespace brq
         __builtin_trap();
 #else
         ERROR( err.what() );
-        abort();
+        std::abort();
 #endif
     }
 
