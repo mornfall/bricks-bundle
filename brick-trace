@@ -47,6 +47,22 @@
 #include <sys/wait.h>
 #endif
 
+#if __clang_major__ < 15
+#define BRICK_DELAY( ... ) __VA_ARGS__
+#define BRICK_FORCE( x ) x
+#else
+#define BRICK_DELAY( ... ) [&]() -> decltype( auto ) \
+{ \
+    auto &&_tmp_ = __VA_ARGS__; \
+    if constexpr ( std::is_lvalue_reference_v< decltype( _tmp_ ) > ) \
+        return _tmp_; \
+    else \
+        return [&]{ return std::move( _tmp_ ); }(); \
+}
+
+#define BRICK_FORCE( x ) ( x )()
+#endif
+
 /* The purpose of the TRACE macro is to allow tracing statements to be included
  * in production code, just like ASSERT macros allow for sanity checks and
  * pre/post-condition checking. If compiled with NDEBUG, it's a noop and in
@@ -64,22 +80,33 @@
  * model checking, only for counter-example generation -- TRACE therefore only
  * causes very modest overhead in DIVINE). */
 
-#define BRICK_SHARP_A(x, ...) #x, __VA_OPT__( BRICK_SHARP_B( __VA_ARGS__ ) )
-#define BRICK_SHARP_9(x, ...) #x, __VA_OPT__( BRICK_SHARP_A( __VA_ARGS__ ) )
-#define BRICK_SHARP_8(x, ...) #x, __VA_OPT__( BRICK_SHARP_9( __VA_ARGS__ ) )
-#define BRICK_SHARP_7(x, ...) #x, __VA_OPT__( BRICK_SHARP_8( __VA_ARGS__ ) )
-#define BRICK_SHARP_6(x, ...) #x, __VA_OPT__( BRICK_SHARP_7( __VA_ARGS__ ) )
-#define BRICK_SHARP_5(x, ...) #x, __VA_OPT__( BRICK_SHARP_6( __VA_ARGS__ ) )
-#define BRICK_SHARP_4(x, ...) #x, __VA_OPT__( BRICK_SHARP_5( __VA_ARGS__ ) )
-#define BRICK_SHARP_3(x, ...) #x, __VA_OPT__( BRICK_SHARP_4( __VA_ARGS__ ) )
-#define BRICK_SHARP_2(x, ...) #x, __VA_OPT__( BRICK_SHARP_3( __VA_ARGS__ ) )
-#define BRICK_SHARP_1(x, ...) #x, __VA_OPT__( BRICK_SHARP_2( __VA_ARGS__ ) )
-#define BRICK_SHARP_0(x, ...) #x, __VA_OPT__( BRICK_SHARP_1( __VA_ARGS__ ) )
+#define BRICK_DELAY_A(x, ...) BRICK_DELAY( x ) __VA_OPT__(, BRICK_DELAY_B( __VA_ARGS__ ) )
+#define BRICK_DELAY_9(x, ...) BRICK_DELAY( x ) __VA_OPT__(, BRICK_DELAY_A( __VA_ARGS__ ) )
+#define BRICK_DELAY_8(x, ...) BRICK_DELAY( x ) __VA_OPT__(, BRICK_DELAY_9( __VA_ARGS__ ) )
+#define BRICK_DELAY_7(x, ...) BRICK_DELAY( x ) __VA_OPT__(, BRICK_DELAY_8( __VA_ARGS__ ) )
+#define BRICK_DELAY_6(x, ...) BRICK_DELAY( x ) __VA_OPT__(, BRICK_DELAY_7( __VA_ARGS__ ) )
+#define BRICK_DELAY_5(x, ...) BRICK_DELAY( x ) __VA_OPT__(, BRICK_DELAY_6( __VA_ARGS__ ) )
+#define BRICK_DELAY_4(x, ...) BRICK_DELAY( x ) __VA_OPT__(, BRICK_DELAY_5( __VA_ARGS__ ) )
+#define BRICK_DELAY_3(x, ...) BRICK_DELAY( x ) __VA_OPT__(, BRICK_DELAY_4( __VA_ARGS__ ) )
+#define BRICK_DELAY_2(x, ...) BRICK_DELAY( x ) __VA_OPT__(, BRICK_DELAY_3( __VA_ARGS__ ) )
+#define BRICK_DELAY_1(x, ...) BRICK_DELAY( x ) __VA_OPT__(, BRICK_DELAY_2( __VA_ARGS__ ) )
+#define BRICK_DELAY_0(x, ...) BRICK_DELAY( x ) __VA_OPT__(, BRICK_DELAY_1( __VA_ARGS__ ) )
+
+#define BRICK_SHARP_A(x, ...) #x __VA_OPT__(, BRICK_SHARP_B( __VA_ARGS__ ) )
+#define BRICK_SHARP_9(x, ...) #x __VA_OPT__(, BRICK_SHARP_A( __VA_ARGS__ ) )
+#define BRICK_SHARP_8(x, ...) #x __VA_OPT__(, BRICK_SHARP_9( __VA_ARGS__ ) )
+#define BRICK_SHARP_7(x, ...) #x __VA_OPT__(, BRICK_SHARP_8( __VA_ARGS__ ) )
+#define BRICK_SHARP_6(x, ...) #x __VA_OPT__(, BRICK_SHARP_7( __VA_ARGS__ ) )
+#define BRICK_SHARP_5(x, ...) #x __VA_OPT__(, BRICK_SHARP_6( __VA_ARGS__ ) )
+#define BRICK_SHARP_4(x, ...) #x __VA_OPT__(, BRICK_SHARP_5( __VA_ARGS__ ) )
+#define BRICK_SHARP_3(x, ...) #x __VA_OPT__(, BRICK_SHARP_4( __VA_ARGS__ ) )
+#define BRICK_SHARP_2(x, ...) #x __VA_OPT__(, BRICK_SHARP_3( __VA_ARGS__ ) )
+#define BRICK_SHARP_1(x, ...) #x __VA_OPT__(, BRICK_SHARP_2( __VA_ARGS__ ) )
+#define BRICK_SHARP_0(x, ...) #x __VA_OPT__(, BRICK_SHARP_1( __VA_ARGS__ ) )
 #define BRICK_LOCATION      ::brq::trace_location{ __LINE__, __FILE__ }
-#define BRICK_TRACE(NF, N, ...) \
-    ::brq::trace_fn< NF, N >( BRICK_LOCATION, \
-                              std::tuple{ BRICK_SHARP_0( __VA_ARGS__ ) }, \
-                              std::forward_as_tuple( __VA_ARGS__ ) )
+#define BRICK_TRACE(NF, N, ...) ::brq::trace_fn< NF >( N, BRICK_LOCATION, \
+                                                       std::tuple{ BRICK_SHARP_0( __VA_ARGS__ ) }, \
+                                                       std::forward_as_tuple( __VA_ARGS__ ) )
 
 #ifdef NDEBUG
 #define TRACE(...) static_cast< decltype(__VA_ARGS__, void(0)) >(0)
@@ -390,7 +417,7 @@ namespace brq
             return;
         else
         {
-            const auto &a = std::get< 0 >( vals );
+            const auto &a = BRICK_FORCE( std::get< 0 >( vals ) );
             using a_type = std::decay_t< decltype( a ) >;
             std::string_view a_name = std::get< 0 >( names );
 

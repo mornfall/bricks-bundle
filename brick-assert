@@ -45,22 +45,6 @@
 #define TEST(n)         template< bool > void n()
 #endif
 
-#if __clang_major__ < 15
-#define BRICK_DELAY( ... ) __VA_ARGS__
-#define BRICK_FORCE( x ) x
-#else
-#define BRICK_DELAY( ... ) [&]() -> decltype( auto ) \
-{ \
-    auto &&_tmp_ = __VA_ARGS__; \
-    if constexpr ( std::is_lvalue_reference_v< decltype( _tmp_ ) > ) \
-        return _tmp_; \
-    else \
-        return [&]{ return std::move( _tmp_ ); }(); \
-}
-
-#define BRICK_FORCE( x ) ( x )()
-#endif
-
 #define BRICK_ASSERT(x, ...) \
     ::brq::assert_fn< brick_enable_assertions > \
                     ( BRICK_LOCATION, \
