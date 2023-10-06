@@ -25,7 +25,6 @@
 #include "brick-min"
 #include <array>
 #include <cmath>
-#include <cstdio>
 
 #ifdef __divine__
 #include <sys/cdefs.h>
@@ -396,25 +395,21 @@ namespace brq
     inline struct trace &trace() noexcept { return singleton< struct trace >(); }
 
     template< trace_fmt fmt, trace_level level, typename... names_t, typename... vals_t >
-    void trace_format( brq::string_builder &b,
+    auto trace_format( brq::string_builder &b,
                        const std::tuple< names_t... > &names,
                        const std::tuple< vals_t... > &vals,
                        bool comma = false, bool space = false ) noexcept
     {
         static_assert( sizeof...( vals_t ) == sizeof...( names_t ) );
-        auto fa = [&]( auto... args )
-        {
-            format_args< ( level >= trace_level::debug ) >
-            (
-                fmt == trace_fmt::spaced ? " " : "",
-                b, args...
-            );
-        };
+        auto fa = [&]( auto... args ) { format_args< debug_trace >( " ", b, args... ); };
 
-        if constexpr ( fmt != trace_fmt::named )
-            return std::apply( fa, vals );
+        if constexpr ( !debug_trace )
+        {
+            std::apply( fa, vals );
+            return eptr;
+        }
         else if constexpr ( sizeof...( vals_t ) == 0 )
-            return;
+            return eptr;
         else
         {
             const auto &a = BRICK_FORCE( std::get< 0 >( vals ) );
@@ -429,17 +424,14 @@ namespace brq
 
             if ( comma && !( literal && string ) )
                 b << ", ";
-            else if ( space )
-                b << " ";
 
             if ( literal )
                 b << a_str;
             else
                 b << a_name << " → " << a_str;
 
-            return trace_format< fmt, level >
-                               ( b, tuple_drop( names ), tuple_drop( vals ),
-                                 !literal || !string, true );
+            return trace_format< true >( b, tuple_drop( names ), tuple_drop( vals ),
+                                            !literal || !string );
         }
     }
 
@@ -464,23 +456,29 @@ namespace brq
     template< trace_fmt fmt, trace_level level, typename... names_t, typename... vals_t >
     __debugfn void trace_fn( trace_location location,
                              const std::tuple< names_t... > &names,
-                             const std::tuple< vals_t... > &vals ) noexcept
+                             const std::tuple< vals_t... > &vals )
+        noexcept( noexcept(( format_arg< true >( std::declval< brq::string_builder & >(),
+                                                 BRICK_FORCE( std::declval< vals_t >() ) ), ... )) )
     {
         string_builder builder;
+        std::exception_ptr eptr;
 
         if ( trace()._use_buffer )
         {
             trace()._buffer.rotate( 1024 * 1024, 2 * 1024 * 1024 );
             trace()._buffer << trace_indent_buffer.begin();
-            trace_format< fmt, level >( trace()._buffer, names, vals );
+            trace_format< debug_trace >( trace()._buffer, names, vals );
             trace()._buffer << "\n";
         }
         else if ( trace().prepare( builder, level, location ) )
         {
             builder << trace_indent_buffer.begin();
-            trace_format< fmt, level >( builder, names, vals );
+            trace_format< debug_trace >( builder, names, vals );
             trace().do_print( builder, level );
         }
+
+        if ( eptr )
+            std::rethrow_exception( eptr );
     }
 
     inline void trace_clear() noexcept
