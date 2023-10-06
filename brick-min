@@ -193,7 +193,9 @@ namespace brq
             return *this;
         }
 
-        string_builder &operator<<( bool b ) noexcept
+        template< typename bool_t >
+        std::enable_if_t< std::is_same_v< bool_t, bool >,  string_builder >
+        &operator<<( bool b ) noexcept
         {
             return *this << ( b ? "true" : "false" );
         }
@@ -218,7 +220,7 @@ namespace brq
         }
 
         template< typename C >
-        auto operator<<( const C &c ) noexcept
+        auto operator<<( const C &c ) noexcept( noexcept( *this << *c ) )
             -> std::enable_if_t< !std::is_convertible_v< C, std::string_view > &&
                                  !std::is_convertible_v< C, std::u32string_view > &&
                                  static_cast< decltype( c.has_value() ) >( true ),
@@ -231,9 +233,10 @@ namespace brq
         }
 
         template< typename C >
-        auto operator<<( const C &c ) noexcept
+        auto operator<<( const C &c ) noexcept( noexcept( *this << *c.begin() ) )
             -> std::enable_if_t< !std::is_convertible_v< C, std::string_view > &&
-                                 !std::is_convertible_v< C, std::u32string_view >,
+                                 !std::is_convertible_v< C, std::u32string_view > &&
+                                 !std::is_same_v< decltype( c ), decltype( *c.begin() ) >,
                                  decltype( *c.begin(), *c.end(), *this ) >
         {
             bool first = true;
@@ -245,7 +248,9 @@ namespace brq
         }
 
         template< typename P >
-        auto operator<<( const P &p ) noexcept -> decltype( *this << p.first << p.second )
+        auto operator<<( const P &p )
+            noexcept( noexcept( *this << p.first << p.second ) )
+            -> decltype( *this << p.first << p.second )
         {
             return *this << "[" << p.first << ", " << p.second << "]";
         }
@@ -384,7 +389,8 @@ namespace brq
      * doesn't care about the trace output). */
 
     template< typename stream, typename T >
-    auto format_nofail( stream &acc, const T &t ) noexcept -> decltype( acc << t )
+    auto format_nofail( stream &acc, const T &t ) noexcept( noexcept( acc << t ) )
+        -> decltype( acc << t )
     {
         return acc << t;
     }
@@ -396,7 +402,8 @@ namespace brq
     }
 
     template< bool nofail, typename stream, typename arg_t >
-    decltype( auto ) format_arg( stream &acc, const arg_t &arg ) noexcept
+    decltype( auto ) format_arg( stream &acc, const arg_t &arg )
+        noexcept( noexcept( format_nofail( acc , arg ) ) )
     {
         if constexpr ( nofail )
             return format_nofail( acc, arg );
