@@ -45,7 +45,7 @@
 #define TEST(n)         template< bool > void n()
 #endif
 
-#ifdef __clang__
+#if __clang_major__ < 15
 #define BRICK_DELAY( ... ) __VA_ARGS__
 #define BRICK_FORCE( x ) x
 #else
