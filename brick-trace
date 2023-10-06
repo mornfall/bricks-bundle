@@ -25,6 +25,7 @@
 #include "brick-min"
 #include <array>
 #include <cmath>
+#include <cstdio>
 
 #ifdef __divine__
 #include <sys/cdefs.h>
@@ -44,8 +45,6 @@
 #include <signal.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
-#else
-#include <cstdio>
 #endif
 
 /* The purpose of the TRACE macro is to allow tracing statements to be included
@@ -219,7 +218,16 @@ namespace brq
             int status;
             trace_dump( 2 );
             waitpid( pid, &status, 0 );
-            std::exit( status );
+
+            if ( WIFEXITED( status ) )
+                std::exit( WEXITSTATUS( status ) );
+            else if ( WIFSIGNALED( status ) )
+            {
+                dprintf( 2, "main process killed by signal %d\n", WTERMSIG( status ) );
+                std::exit( 1 );
+            }
+            else
+                std::abort(); // what the hell
         }
 #endif
 
