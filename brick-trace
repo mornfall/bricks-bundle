@@ -85,13 +85,15 @@
 #define TRACE(...) static_cast< decltype(__VA_ARGS__, void(0)) >(0)
 #define NOISE(...) static_cast< decltype(__VA_ARGS__, void(0)) >(0)
 #else
-#define TRACE(...) BRICK_TRACE( true,  ::brq::trace_level::trace, __VA_ARGS__ )
-#define NOISE(...) BRICK_TRACE( true,  ::brq::trace_level::noise, __VA_ARGS__ )
+#define TRACE_(...) BRICK_TRACE( false, ::brq::trace_level::trace, __VA_ARGS__ )
+#define TRACE(...)  BRICK_TRACE( true,  ::brq::trace_level::trace, __VA_ARGS__ )
+#define NOISE(...)  BRICK_TRACE( true,  ::brq::trace_level::noise, __VA_ARGS__ )
 #endif
-#define DEBUG(...) BRICK_TRACE( true,  ::brq::trace_level::debug, __VA_ARGS__ )
-#define INFO(...)  BRICK_TRACE( false, ::brq::trace_level::info, __VA_ARGS__ )
-#define WARN(...)  BRICK_TRACE( false, ::brq::trace_level::warn, __VA_ARGS__ )
-#define ERROR(...) BRICK_TRACE( false, ::brq::trace_level::error, __VA_ARGS__ )
+#define DEBUG_(...) BRICK_TRACE( false, ::brq::trace_level::debug, __VA_ARGS__ )
+#define DEBUG(...)  BRICK_TRACE( true,  ::brq::trace_level::debug, __VA_ARGS__ )
+#define INFO(...)   BRICK_TRACE( false, ::brq::trace_level::info, __VA_ARGS__ )
+#define WARN(...)   BRICK_TRACE( false, ::brq::trace_level::warn, __VA_ARGS__ )
+#define ERROR(...)  BRICK_TRACE( false, ::brq::trace_level::error, __VA_ARGS__ )
 
 namespace brq
 {
