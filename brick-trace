@@ -445,10 +445,15 @@ namespace brq
     inline void trace_clear() noexcept
     {
         char clrmsg = 0;
+        std::string_view divider(
+                "───────────────────────────────────────────────────────────────────────\n" );
+
         if ( trace()._log_socket >= 0 )
             write( trace()._log_socket, &clrmsg, 1 );
-        else
+        else if ( trace()._use_buffer )
             trace()._buffer.clear();
+        else
+            ::write( 2, divider.data(), divider.size() );
     }
 
     inline void trace_dump( int fd ) noexcept
