@@ -450,7 +450,7 @@ namespace brq
 
         if ( trace()._log_socket >= 0 )
             write( trace()._log_socket, &clrmsg, 1 );
-        else if ( trace()._use_buffer )
+        else if ( trace()._use_buffer )
             trace()._buffer.clear();
         else
             ::write( 2, divider.data(), divider.size() );
