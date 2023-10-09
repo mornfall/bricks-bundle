@@ -398,74 +398,71 @@ namespace brq
 
     inline struct trace &trace() noexcept { return singleton< struct trace >(); }
 
-    template< trace_fmt fmt, trace_level level, typename... names_t, typename... vals_t >
+    template< trace_fmt fmt, trace_level level >
+    auto trace_format( brq::string_builder &, const std::tuple<> &, const std::tuple<> &,
+                       bool = false, bool = false, std::exception_ptr eptr = {} ) noexcept
+    {
+        return eptr;
+    }
+
+    template< trace_fmt fmt, trace_level level,
+              typename name_t, typename... names_t,
+              typename val_t, typename... vals_t >
     auto trace_format( brq::string_builder &b,
-                       const std::tuple< names_t... > &names,
-                       const std::tuple< vals_t... > &vals,
-                       bool comma = false, bool space = false ) noexcept
+                       const std::tuple< name_t, names_t... > &names,
+                       const std::tuple< val_t, vals_t... > &vals,
+                       bool comma = false, bool space = false,
+                       std::exception_ptr eptr = {} ) noexcept
     {
         static_assert( sizeof...( vals_t ) == sizeof...( names_t ) );
 
-        std::exception_ptr eptr;
-        std::string_view a_name;
-        bool literal = false, string = false;
+        std::string_view a_name = std::get< 0 >( names );
+        int item_start = b.size();
+        bool raw_string = false;
 
-        auto fa = [&]( auto... args )
-        {
-            format_args< ( level >= trace_level::debug ) >
-            (
-                fmt == trace_fmt::spaced ? " " : "",
-                b, args...
-            );
-        };
+        if ( space && !comma )
+            b << " ";
 
-        if constexpr ( fmt != trace_fmt::named )
+        if ( fmt == trace_fmt::named )
+            b << ( comma ? ", " : "" ) << a_name << " → ";
+
+        int value_start = b.size();
+
+        try
         {
-            std::apply( fa, vals );
-            return eptr;
+            const auto &val = BRICK_FORCE( std::get< 0 >( vals ) );
+            raw_string = std::is_same_v< std::decay_t< decltype( val ) >, const char * >;
+            format_arg< true >( b, val );
         }
-        else if constexpr ( sizeof...( vals_t ) == 0 )
-            return eptr;
-        else
+        catch ( ... )
         {
-            try
+            eptr = std::current_exception();
+            b << "[exception]";
+        }
+
+        if ( fmt == trace_fmt::named )
+        {
+            auto a_str = b.data().substr( value_start );
+
+            if ( a_str == a_name || a_name.substr( 1, a_name.size() - 2 ) == a_str || raw_string )
             {
-                a_name = std::get< 0 >( names );
-                const auto &a = BRICK_FORCE( std::get< 0 >( vals ) );
-                using a_type = std::decay_t< decltype( a ) >;
-
-                string_builder a_str;
-                format_arg< true >( a_str, a );
-
-                literal = a_str.data() == a_name ||
-                          a_name.substr( 1, a_name.size() - 2 ) == a_str.data();
-                string = std::is_same_v< a_type, const char * >;
-
-                if ( comma && !( literal && string ) )
-                    b << ", ";
-                else if ( space )
-                    b << " ";
-
-                if ( literal )
-                    b << a_str;
+                if ( comma ) /* oops */
+                {
+                    b.rewind( item_start );
+                    b << ( space ? " " : "" ) << a_str;
+                }
                 else
-                    b << a_name << " → " << a_str;
+                    b.rewind( item_start - strlen( " → " ) );
 
-                return trace_format< fmt, level >
-                                   ( b, tuple_drop( names ), tuple_drop( vals ),
-                                     !literal || !string, true );
+                comma = false;
             }
-            catch ( ... )
-            {
-                eptr = std::current_exception();
-            }
-
-            b << a_name << " → [exception]";
-            trace_format< fmt, level >
-                        ( b, tuple_drop( names ), tuple_drop( vals ),
-                          !literal || !string, true );
-            return eptr;
+            else
+                comma = true;
         }
+
+        return trace_format< fmt, level >
+                           ( b, tuple_drop( names ), tuple_drop( vals ),
+                             comma, fmt != trace_fmt::packed, eptr );
     }
 
     inline thread_local std::array< char, 16 > trace_indent_buffer{};
