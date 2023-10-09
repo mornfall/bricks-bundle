@@ -194,8 +194,8 @@ namespace brq
         }
 
         template< typename bool_t >
-        std::enable_if_t< std::is_same_v< bool_t, bool >,  string_builder >
-        &operator<<( bool b ) noexcept
+        std::enable_if_t< std::is_same_v< std::remove_cv_t< bool_t >, bool >, string_builder >
+        &operator<<( bool_t b ) noexcept
         {
             return *this << ( b ? "true" : "false" );
         }
