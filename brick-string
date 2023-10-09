@@ -73,6 +73,8 @@ namespace brq
         explicit mark_t( string_builder &b ) : b( &b ), mark( b._d.offset ) {}
         template< typename T > mark_t operator<<( T &&v ) { *b << std::forward< T >( v ); return *this; }
         auto size() const { return b->size(); }
+
+        friend mark_t operator<<( string_builder &bld, mark_t ) { return mark_t( bld ); }
     };
 
     struct pad
@@ -99,12 +101,11 @@ namespace brq
             }
             return b;
         }
+
+        friend pad operator<<( string_builder &bld, pad p ) { return pad( bld, p ); }
     };
 
     inline constexpr mark_t mark;
-
-    inline mark_t operator<<( string_builder &bld, mark_t ) { return mark_t( bld ); }
-    inline pad operator<<( string_builder &bld, pad p ) { return pad( bld, p ); }
 
     inline string_builder &operator<<( mark_t m, pad p )
     {
