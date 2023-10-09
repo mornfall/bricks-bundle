@@ -45,11 +45,11 @@
 #define TEST(n)         template< bool > void n()
 #endif
 
-#define BRICK_ASSERT(x, ...) \
+#define BRICK_ASSERT(...) \
     ::brq::assert_fn< brick_enable_assertions > \
                     ( BRICK_LOCATION, \
-                      std::tuple{ #x __VA_OPT__(, BRICK_SHARP_0( __VA_ARGS__ ) ) }, \
-                      std::forward_as_tuple( BRICK_DELAY( x ) __VA_OPT__(, __VA_ARGS__ ) ) )
+                      std::tuple{ BRICK_SHARP_0( __VA_ARGS__ ) }, \
+                      std::forward_as_tuple( BRICK_DELAY_0( __VA_ARGS__ ) ) )
 
 #define BRICK_CHECK_ENABLED(x) \
     ( ::brq::array_contains( ::brq::brick_enable_assertions_in, "everything" ) || \
@@ -81,13 +81,12 @@ constexpr bool brick_enable_assertions = true; /* must be global, unfortunately 
 
 #else
 
-#define BRICK_ASSERT_BIN(op, inv, x, y, ...) \
+#define BRICK_ASSERT_BIN(op, inv, ...) \
     ::brq::assert_bin_fn< brick_enable_assertions > \
                         ( BRICK_LOCATION, \
                           []( const auto &a, const auto &b ) { return a op b; }, \
-                          #op, std::tuple{ #x, #y __VA_OPT__(, BRICK_SHARP_0( __VA_ARGS__  ) ) }, \
-                               std::forward_as_tuple( BRICK_DELAY( x ), BRICK_DELAY( y ) \
-                                                      __VA_OPT__(, __VA_ARGS__ ) ) )
+                          #op, std::tuple{ BRICK_SHARP_0( __VA_ARGS__ ) }, \
+                               std::forward_as_tuple( BRICK_DELAY_0( __VA_ARGS__ ) ) )
 
 #define ASSERT(...)     BRICK_ASSERT( __VA_ARGS__ )
 #define ASSERT_EQ(...)  BRICK_ASSERT_BIN( ==, !=, __VA_ARGS__ )
