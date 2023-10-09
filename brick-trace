@@ -76,26 +76,30 @@
 #define BRICK_SHARP_1(x, ...) #x, __VA_OPT__( BRICK_SHARP_2( __VA_ARGS__ ) )
 #define BRICK_SHARP_0(x, ...) #x, __VA_OPT__( BRICK_SHARP_1( __VA_ARGS__ ) )
 #define BRICK_LOCATION      ::brq::trace_location{ __LINE__, __FILE__ }
-#define BRICK_TRACE(NF, N, ...) ::brq::trace_fn< NF >( N, BRICK_LOCATION, \
-                                                       std::tuple{ BRICK_SHARP_0( __VA_ARGS__ ) }, \
-                                                       std::forward_as_tuple( __VA_ARGS__ ) )
+#define BRICK_TRACE(NF, N, ...) \
+    ::brq::trace_fn< NF, N >( BRICK_LOCATION, \
+                              std::tuple{ BRICK_SHARP_0( __VA_ARGS__ ) }, \
+                              std::forward_as_tuple( __VA_ARGS__ ) )
 
 #ifdef NDEBUG
 #define TRACE(...) static_cast< decltype(__VA_ARGS__, void(0)) >(0)
 #define NOISE(...) static_cast< decltype(__VA_ARGS__, void(0)) >(0)
 #else
-#define TRACE_(...) BRICK_TRACE( false, ::brq::trace_level::trace, __VA_ARGS__ )
-#define TRACE(...)  BRICK_TRACE( true,  ::brq::trace_level::trace, __VA_ARGS__ )
-#define NOISE(...)  BRICK_TRACE( true,  ::brq::trace_level::noise, __VA_ARGS__ )
+#define TRACE(...)  BRICK_TRACE( ::brq::trace_fmt::spaced, ::brq::trace_level::trace, __VA_ARGS__ )
+#define TRACEP(...) BRICK_TRACE( ::brq::trace_fmt::packed, ::brq::trace_level::trace, __VA_ARGS__ )
+#define TRACEN(...) BRICK_TRACE( ::brq::trace_fmt::named,  ::brq::trace_level::trace, __VA_ARGS__ )
+#define NOISE(...)  BRICK_TRACE( ::brq::trace_fmt::named,  ::brq::trace_level::noise, __VA_ARGS__ )
 #endif
-#define DEBUG_(...) BRICK_TRACE( false, ::brq::trace_level::debug, __VA_ARGS__ )
-#define DEBUG(...)  BRICK_TRACE( true,  ::brq::trace_level::debug, __VA_ARGS__ )
-#define INFO(...)   BRICK_TRACE( false, ::brq::trace_level::info, __VA_ARGS__ )
-#define WARN(...)   BRICK_TRACE( false, ::brq::trace_level::warn, __VA_ARGS__ )
-#define ERROR(...)  BRICK_TRACE( false, ::brq::trace_level::error, __VA_ARGS__ )
+#define DEBUGN(...) BRICK_TRACE( ::brq::trace_fmt::named,  ::brq::trace_level::debug, __VA_ARGS__ )
+#define DEBUG(...)  BRICK_TRACE( ::brq::trace_fmt::spaced, ::brq::trace_level::debug, __VA_ARGS__ )
+#define INFO(...)   BRICK_TRACE( ::brq::trace_fmt::spaced, ::brq::trace_level::info,  __VA_ARGS__ )
+#define WARN(...)   BRICK_TRACE( ::brq::trace_fmt::spaced, ::brq::trace_level::warn,  __VA_ARGS__ )
+#define ERROR(...)  BRICK_TRACE( ::brq::trace_fmt::spaced, ::brq::trace_level::error, __VA_ARGS__ )
 
 namespace brq
 {
+    enum class trace_fmt { packed, spaced, named };
+
     /* Wrap __FILE__ and __LINE__. Needs to be cheap to construct and pass
      * around, since in debug builds this happens a lot. */
 
@@ -364,16 +368,23 @@ namespace brq
 
     inline struct trace &trace() noexcept { return singleton< struct trace >(); }
 
-    template< bool debug_trace, typename... names_t, typename... vals_t >
+    template< trace_fmt fmt, trace_level level, typename... names_t, typename... vals_t >
     void trace_format( brq::string_builder &b,
                        const std::tuple< names_t... > &names,
                        const std::tuple< vals_t... > &vals,
-                       bool comma = false ) noexcept
+                       bool comma = false, bool space = false ) noexcept
     {
         static_assert( sizeof...( vals_t ) == sizeof...( names_t ) );
-        auto fa = [&]( auto... args ) { format_args< debug_trace >( " ", b, args... ); };
+        auto fa = [&]( auto... args )
+        {
+            format_args< ( level >= trace_level::debug ) >
+            (
+                fmt == trace_fmt::spaced ? " " : "",
+                b, args...
+            );
+        };
 
-        if constexpr ( !debug_trace )
+        if constexpr ( fmt != trace_fmt::named )
             return std::apply( fa, vals );
         else if constexpr ( sizeof...( vals_t ) == 0 )
             return;
@@ -391,14 +402,17 @@ namespace brq
 
             if ( comma && !( literal && string ) )
                 b << ", ";
+            else if ( space )
+                b << " ";
 
             if ( literal )
                 b << a_str;
             else
                 b << a_name << " → " << a_str;
 
-            return trace_format< true >( b, tuple_drop( names ), tuple_drop( vals ),
-                                            !literal || !string );
+            return trace_format< fmt, level >
+                               ( b, tuple_drop( names ), tuple_drop( vals ),
+                                 !literal || !string, true );
         }
     }
 
@@ -420,8 +434,8 @@ namespace brq
         }
     };
 
-    template< bool debug_trace, typename... names_t, typename... vals_t >
-    __debugfn void trace_fn( trace_level level, trace_location location,
+    template< trace_fmt fmt, trace_level level, typename... names_t, typename... vals_t >
+    __debugfn void trace_fn( trace_location location,
                              const std::tuple< names_t... > &names,
                              const std::tuple< vals_t... > &vals ) noexcept
     {
@@ -431,13 +445,13 @@ namespace brq
         {
             trace()._buffer.rotate( 1024 * 1024, 2 * 1024 * 1024 );
             trace()._buffer << trace_indent_buffer.begin();
-            trace_format< debug_trace >( trace()._buffer, names, vals );
+            trace_format< fmt, level >( trace()._buffer, names, vals );
             trace()._buffer << "\n";
         }
         else if ( trace().prepare( builder, level, location ) )
         {
             builder << trace_indent_buffer.begin();
-            trace_format< debug_trace >( builder, names, vals );
+            trace_format< fmt, level >( builder, names, vals );
             trace().do_print( builder, level );
         }
     }
