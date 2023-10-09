@@ -350,7 +350,7 @@ namespace brq
         const type &ref;
         bool operator==( const printable &o ) const = default;
 
-        printable( const type &r ) : ref( r ) {}
+        explicit printable( const type &r ) : ref( r ) {}
 
         friend auto &operator<<( brq::string_builder &b, const printable &e )
         {
