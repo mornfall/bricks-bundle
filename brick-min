@@ -50,6 +50,30 @@ namespace brq
     struct primary_t {};
     inline constexpr primary_t primary;
 
+    struct promise_tag {};
+
+    template< typename thunk_t >
+    struct promise : promise_tag, thunk_t
+    {
+        using result_t = decltype( std::declval< thunk_t >()() );
+        promise( auto &&thunk ) : thunk_t( thunk ) {}
+    };
+
+    template< typename thunk_t >
+    promise( thunk_t ) -> promise< thunk_t >;
+
+    decltype( auto ) force( auto &&p )
+    {
+        using arg_t = std::decay_t< decltype( p ) >;
+
+        if constexpr ( std::is_base_of_v< promise_tag, arg_t > )
+            return p();
+        else if constexpr ( std::is_lvalue_reference_v< decltype( p ) > )
+            return p;
+        else
+            return [&]{ return std::move( p ); }();
+    }
+
     /* A simple string builder, similar to std::stringstream but much lighter.
      * Only works with 8-bit characters (i.e. no wchar_t or char32_t). Provides
      * a basic selection of formatting operators. To provide formatting
