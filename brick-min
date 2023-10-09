@@ -21,6 +21,7 @@
 #include <cstring>
 #include <cstdint>
 #include <cstdlib>
+#include <cstdio>
 #include <cctype>
 #include <string_view>
 #include <charconv>
