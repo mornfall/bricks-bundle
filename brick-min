@@ -251,7 +251,7 @@ namespace brq
             if ( c.has_value() )
                 return *this << "[ " << *c << " ]";
             else
-                return *this << "<null>";
+                return *this << "[nullopt]";
         }
 
         template< typename C >
