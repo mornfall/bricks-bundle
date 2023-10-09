@@ -242,16 +242,18 @@ namespace brq
                 std::tuple prefix{ "assert ", std::get< 0 >( names ),
                                    sizeof...( names_t ) > 1 ? ": " : "" };
 
-                trace_fn< true >( trace_level::debug, l,
-                                  std::tuple_cat( prefix, tuple_drop( names ) ),
-                                  std::tuple_cat( prefix, tuple_drop( vals ) ) );
+                trace_fn< trace_fmt::packed, trace_level::debug >
+                (
+                    l, std::tuple_cat( prefix, tuple_drop( names ) ),
+                       std::tuple_cat( prefix, tuple_drop( vals ) )
+                );
             }
 
             if ( auto val = BRICK_FORCE( std::get< 0 >( vals ) ); !val )
             {
                 assert_failed f( l );
-                trace_format< true >( f, names,
-                                      std::tuple_cat( std::tie( val ), tuple_drop( vals ) ) );
+                trace_format< trace_fmt::named, trace_level::debug >
+                            ( f, names, std::tuple_cat( std::tie( val ), tuple_drop( vals ) ) );
                 assert_signal( f );
             }
         }
@@ -295,9 +297,11 @@ namespace brq
                 std::tuple prefix{ "assert ", a_str, " ", op_str, " ", b_str,
                                    sizeof...( names_t ) > 2 ? ": " : "" };
 
-                trace_fn< true >( trace_level::debug, l,
-                                  std::tuple_cat( prefix, tuple_drop< 2 >( names ) ),
-                                  std::tuple_cat( prefix, tuple_drop< 2 >( vals ) ) );
+                trace_fn< trace_fmt::packed, trace_level::debug >
+                (
+                    l, std::tuple_cat( prefix, tuple_drop< 2 >( names ) ),
+                       std::tuple_cat( prefix, tuple_drop< 2 >( vals ) )
+                );
             }
 
             auto &&a = BRICK_FORCE( a_box );
@@ -325,7 +329,8 @@ namespace brq
 
                 if constexpr ( sizeof...( names_t ) > 2 )
                     f << "\n  ";
-                trace_format< true >( f, tuple_drop< 2 >( names ), tuple_drop< 2 >( vals ) );
+                trace_format< trace_fmt::named, trace_level::debug >
+                            ( f, tuple_drop< 2 >( names ), tuple_drop< 2 >( vals ) );
 
                 assert_signal( f );
             }
