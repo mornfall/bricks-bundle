@@ -116,11 +116,11 @@
 #define NOISE(...) static_cast< decltype(__VA_ARGS__, void(0)) >(0)
 #else
 #define TRACE(...)  BRICK_TRACE( ::brq::trace_fmt::spaced, ::brq::trace_level::trace, __VA_ARGS__ )
-#define TRACEP(...) BRICK_TRACE( ::brq::trace_fmt::packed, ::brq::trace_level::trace, __VA_ARGS__ )
-#define TRACEN(...) BRICK_TRACE( ::brq::trace_fmt::named,  ::brq::trace_level::trace, __VA_ARGS__ )
+#define TRACE_(...) BRICK_TRACE( ::brq::trace_fmt::packed, ::brq::trace_level::trace, __VA_ARGS__ )
+#define TRACEX(...) BRICK_TRACE( ::brq::trace_fmt::named,  ::brq::trace_level::trace, __VA_ARGS__ )
 #define NOISE(...)  BRICK_TRACE( ::brq::trace_fmt::named,  ::brq::trace_level::noise, __VA_ARGS__ )
 #endif
-#define DEBUGN(...) BRICK_TRACE( ::brq::trace_fmt::named,  ::brq::trace_level::debug, __VA_ARGS__ )
+#define DEBUGX(...) BRICK_TRACE( ::brq::trace_fmt::named,  ::brq::trace_level::debug, __VA_ARGS__ )
 #define DEBUG(...)  BRICK_TRACE( ::brq::trace_fmt::spaced, ::brq::trace_level::debug, __VA_ARGS__ )
 #define INFO(...)   BRICK_TRACE( ::brq::trace_fmt::spaced, ::brq::trace_level::info,  __VA_ARGS__ )
 #define WARN(...)   BRICK_TRACE( ::brq::trace_fmt::spaced, ::brq::trace_level::warn,  __VA_ARGS__ )
