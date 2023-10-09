@@ -82,7 +82,7 @@ namespace brq
         mark_t mark;
         int width;
         char ch;
-        pad( int w, char ch = ' ' ) : width( w ), ch( ch ) {}
+        explicit pad( int w, char ch = ' ' ) : width( w ), ch( ch ) {}
         pad( string_builder &b, pad p ) : mark( b ), width( p.width ), ch( p.ch ) {}
 
         auto size() const { return mark.size(); }
