@@ -277,16 +277,16 @@ namespace brq
             return *this << "[" << p.first << ", " << p.second << "]";
         }
 
-        template< typename V >
-        auto operator<<( const V &val ) noexcept
-            -> std::enable_if_t< std::is_arithmetic_v< V > && !std::is_same_v< V, char >,
-                                 decltype( std::to_chars( _d.buffer, _d.buffer, val ), *this ) >
+        template< typename val_t >
+        auto print_to_chars( const val_t &val, primary_t ) noexcept
+            -> decltype( std::to_chars( _d.buffer, _d.buffer, val ), void( 0 ) )
         {
             int cap = 16;
             std::to_chars_result result;
             do {
-                if ( !_make_space( cap ) ) return *this;
-                if constexpr ( std::is_integral< V >::value )
+                if ( !_make_space( cap ) )
+                    return;
+                if constexpr ( std::is_integral< val_t >::value )
                     result = std::to_chars( pointer(), buffer_end(), val, _d.hex ? 16 : 10 );
                 else
                     result = std::to_chars( pointer(), buffer_end(), val );
@@ -295,6 +295,23 @@ namespace brq
 
             _d.offset = result.ptr - _d.buffer;
             _d.buffer[ _d.offset ] = 0;
+        }
+
+        void print_to_chars( double val, fallback ) noexcept
+        {
+            if ( !_make_space( 32 ) )
+                return;
+            _d.offset += std::min( std::snprintf( _d.buffer + _d.offset, 32, "%f", val ), 32 );
+        }
+
+        template< typename val_t >
+        auto operator<<( const val_t &val ) noexcept
+            -> std::enable_if_t< std::is_arithmetic_v< val_t > &&
+                                 !std::is_same_v< val_t, bool > &&
+                                 !std::is_same_v< val_t, char >,
+                                 string_builder & >
+        {
+            print_to_chars( val, primary );
             return *this;
         }
 
