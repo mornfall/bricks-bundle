@@ -33,6 +33,23 @@
 
 namespace brq
 {
+    struct unit_t
+    {
+        bool operator==( const unit_t & ) const = default;
+        bool operator<=>( const unit_t & ) const = default;
+    };
+
+    inline unit_t unit;
+
+    struct fallback
+    {
+        template< typename T >
+        constexpr fallback( const T & ) {}
+    };
+
+    struct primary_t {};
+    inline constexpr primary_t primary;
+
     /* A simple string builder, similar to std::stringstream but much lighter.
      * Only works with 8-bit characters (i.e. no wchar_t or char32_t). Provides
      * a basic selection of formatting operators. To provide formatting
@@ -219,6 +236,11 @@ namespace brq
             return (*this) << ( str ? std::string_view( str ) : "<nullptr>" );
         }
 
+        string_builder &operator<<( unit_t )
+        {
+            return *this << "()";
+        }
+
         template< typename C >
         auto operator<<( const C &c ) noexcept( noexcept( *this << *c ) )
             -> std::enable_if_t< !std::is_convertible_v< C, std::string_view > &&
@@ -358,28 +380,6 @@ namespace brq
             return b << "\"";
         }
     };
-
-    struct unit_t
-    {
-        bool operator==( const unit_t & ) const = default;
-        bool operator<=>( const unit_t & ) const = default;
-
-        friend auto &operator<<( string_builder &b, unit_t )
-        {
-            return b << "()";
-        }
-    };
-
-    inline unit_t unit;
-
-    struct fallback
-    {
-        template< typename T >
-        constexpr fallback( const T & ) {}
-    };
-
-    struct primary_t {};
-    inline constexpr primary_t primary;
 
     /* Format a bunch of values into a stream, separated by spaces. Values that
      * don't have a string_builder formatting operator are printed as
