@@ -75,6 +75,18 @@ namespace brq
             return [&]{ return std::move( p ); }();
     }
 
+    template< typename ptr_t, typename = void >
+    struct dereference
+    {
+        using type = decltype( *std::declval< ptr_t >() );
+    };
+
+    template< typename ptr_t >
+    struct dereference< ptr_t, std::enable_if_t< std::is_function_v< ptr_t > > > {};
+
+    template< typename ptr_t >
+    using dereference_t = typename dereference< ptr_t >::type;
+
     /* A simple string builder, similar to std::stringstream but much lighter.
      * Only works with 8-bit characters (i.e. no wchar_t or char32_t). Provides
      * a basic selection of formatting operators. To provide formatting
@@ -266,17 +278,20 @@ namespace brq
             return *this << "()";
         }
 
-        template< typename C >
-        auto operator<<( const C &c ) noexcept( noexcept( *this << *c ) )
-            -> std::enable_if_t< !std::is_convertible_v< C, std::string_view > &&
-                                 !std::is_convertible_v< C, std::u32string_view > &&
-                                 static_cast< decltype( c.has_value() ) >( true ),
-                                 decltype( *this << *c ) >
+        template< typename indirect_t >
+        auto operator<<( const indirect_t &c )
+               noexcept( noexcept( *this << std::declval< dereference_t< indirect_t > >() ) )
+            -> std::enable_if_t< !std::is_convertible_v< indirect_t, std::string_view > &&
+                                 !std::is_convertible_v< indirect_t, std::u32string_view > &&
+                                 !std::is_function_v< decltype( c ) > &&
+                                 static_cast< decltype( *c, !c ) >( true ) &&
+                                 std::is_lvalue_reference_v< decltype( *c ) >,
+                                 decltype( *this << std::declval< dereference_t< indirect_t > >() ) >
         {
-            if ( c.has_value() )
-                return *this << "[ " << *c << " ]";
+            if ( c )
+                return *this << "&" << *c;
             else
-                return *this << "[nullopt]";
+                return *this << "(null)";
         }
 
         template< typename C >
