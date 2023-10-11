@@ -418,7 +418,6 @@ namespace brq
 
         std::string_view a_name = std::get< 0 >( names );
         int item_start = b.size();
-        bool raw_string = false;
 
         if ( space && !comma )
             b << " ";
@@ -431,7 +430,6 @@ namespace brq
         try
         {
             const auto &val = BRICK_FORCE( std::get< 0 >( vals ) );
-            raw_string = std::is_same_v< std::decay_t< decltype( val ) >, const char * >;
             format_arg< true >( b, printable( val ) );
         }
         catch ( ... )
@@ -440,25 +438,16 @@ namespace brq
             b << "[exception]";
         }
 
-        if ( fmt == trace_fmt::named )
+        auto a_str = b.data().substr( value_start );
+
+        if ( a_str == a_name )
         {
-            auto a_str = b.data().substr( value_start );
-
-            if ( a_str == a_name || a_name.substr( 1, a_name.size() - 2 ) == a_str || raw_string )
-            {
-                if ( comma ) /* oops */
-                {
-                    b.rewind( item_start );
-                    b << ( space ? " " : "" ) << a_str;
-                }
-                else
-                    b.rewind( item_start - strlen( " → " ) );
-
-                comma = false;
-            }
-            else
-                comma = true;
+            b.rewind( item_start );
+            b << ( space ? " " : "" ) << BRICK_FORCE( std::get< 0 >( vals ) );
+            comma = false;
         }
+        else
+            comma = fmt == trace_fmt::named;
 
         return trace_format< fmt, level >
                            ( b, tuple_drop( names ), tuple_drop( vals ),
