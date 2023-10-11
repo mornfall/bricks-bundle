@@ -42,6 +42,14 @@ namespace brq
             return b << ( i == 0 ? "]" : " ]" );
     }
 
+    auto &operator<<( string_builder &b, const std::vector< bool > &t ) noexcept
+    {
+        b << "⟨";
+        for ( bool bit : t )
+            b << ( bit ? '1' : '0' );
+        return b << "⟩";
+    }
+
     template< typename... T >
     auto &operator<<( string_builder &b, const std::variant< T... > &v ) noexcept
     {
