@@ -416,7 +416,7 @@ namespace brq
     {
         static_assert( sizeof...( vals_t ) == sizeof...( names_t ) );
 
-        std::string_view a_name = std::get< 0 >( names );
+        auto a_name = std::get< 0 >( names );
         int item_start = b.size();
 
         if ( space && !comma )
@@ -440,7 +440,7 @@ namespace brq
 
         auto a_str = b.data().substr( value_start );
 
-        if ( a_str == a_name )
+        if ( a_str == a_name || !std::is_same_v< decltype( a_name ), const char * > )
         {
             b.rewind( item_start );
             b << ( space ? " " : "" ) << BRICK_FORCE( std::get< 0 >( vals ) );

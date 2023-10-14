@@ -238,8 +238,10 @@ namespace brq
         {
             if ( !singleton< assert_config >().quiet )
             {
-                std::tuple prefix{ "assert ", std::get< 0 >( names ),
-                                   sizeof...( names_t ) > 1 ? ": " : "" };
+                using namespace std::literals;
+
+                std::tuple prefix{ "assert "sv, std::get< 0 >( names ),
+                                   sizeof...( names_t ) > 1 ? ": "sv : ""sv };
 
                 trace_fn< trace_fmt::packed, trace_level::debug >
                 (
@@ -293,8 +295,10 @@ namespace brq
 
             if ( !singleton< assert_config >().quiet )
             {
-                std::tuple prefix{ "assert ", a_str, " ", op_str, " ", b_str,
-                                   sizeof...( names_t ) > 2 ? ": " : "" };
+                using namespace std::literals;
+
+                std::tuple prefix{ "assert "sv, a_str, " "sv, op_str, " "sv, b_str,
+                                   sizeof...( names_t ) > 2 ? ": "sv : ""sv };
 
                 trace_fn< trace_fmt::packed, trace_level::debug >
                 (
