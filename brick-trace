@@ -122,13 +122,13 @@
 #endif
 #define DEBUGX(...) BRICK_TRACE( ::brq::trace_fmt::named,  ::brq::trace_level::debug, __VA_ARGS__ )
 #define DEBUG(...)  BRICK_TRACE( ::brq::trace_fmt::spaced, ::brq::trace_level::debug, __VA_ARGS__ )
-#define INFO(...)   BRICK_TRACE( ::brq::trace_fmt::spaced, ::brq::trace_level::info,  __VA_ARGS__ )
-#define WARN(...)   BRICK_TRACE( ::brq::trace_fmt::spaced, ::brq::trace_level::warn,  __VA_ARGS__ )
-#define ERROR(...)  BRICK_TRACE( ::brq::trace_fmt::spaced, ::brq::trace_level::error, __VA_ARGS__ )
+#define INFO(...)   BRICK_TRACE( ::brq::trace_fmt::raw,    ::brq::trace_level::info,  __VA_ARGS__ )
+#define WARN(...)   BRICK_TRACE( ::brq::trace_fmt::raw,    ::brq::trace_level::warn,  __VA_ARGS__ )
+#define ERROR(...)  BRICK_TRACE( ::brq::trace_fmt::raw,    ::brq::trace_level::error, __VA_ARGS__ )
 
 namespace brq
 {
-    enum class trace_fmt { packed, spaced, named };
+    enum class trace_fmt { raw, packed, spaced, named };
 
     /* Wrap __FILE__ and __LINE__. Needs to be cheap to construct and pass
      * around, since in debug builds this happens a lot. */
@@ -430,7 +430,10 @@ namespace brq
         try
         {
             const auto &val = BRICK_FORCE( std::get< 0 >( vals ) );
-            format_arg< true >( b, printable( val ) );
+            if ( fmt == trace_fmt::raw )
+                b << val;
+            else
+                format_arg< true >( b, printable( val ) );
         }
         catch ( ... )
         {
