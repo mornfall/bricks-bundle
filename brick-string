@@ -28,6 +28,27 @@
 
 namespace brq
 {
+    template< typename... args_t >
+    struct printable< std::tuple< args_t... > >
+    {
+        using indices = std::index_sequence_for< args_t... >;
+        const std::tuple< args_t... > &tuple;
+        printable( const std::tuple< args_t... > &t ) : tuple( t ) {}
+
+        template< std::size_t... idx >
+        auto &print( std::index_sequence< idx... >, brq::string_builder &b ) const
+        {
+            int i = 0;
+            ( ( b << ( i++ ? ", " : "[ " ) << brq::printable{ std::get< idx >( tuple ) } ), ... );
+            return b << " ]";
+        }
+
+        friend auto &operator<<( brq::string_builder &b, const printable &a )
+        {
+            return a.print( indices(), b );
+        }
+    };
+
     template< int i = 0, typename... T >
     auto &operator<<( string_builder &b, const std::tuple< T... > &t ) noexcept
     {
