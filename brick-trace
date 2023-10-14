@@ -430,7 +430,7 @@ namespace brq
         try
         {
             const auto &val = BRICK_FORCE( std::get< 0 >( vals ) );
-            if ( fmt == trace_fmt::raw )
+            if constexpr ( fmt == trace_fmt::raw )
                 b << val;
             else
                 format_arg< true >( b, printable( val ) );
