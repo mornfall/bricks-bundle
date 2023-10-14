@@ -394,7 +394,10 @@ namespace brq
 
         friend auto &operator<<( brq::string_builder &b, const printable &e )
         {
-            return b << e.ref;
+            if constexpr ( requires { b << e.ref; } )
+                return b << e.ref;
+            else
+                return b << "⟨?⟩";
         }
     };
 
