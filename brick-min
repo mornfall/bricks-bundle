@@ -75,7 +75,7 @@ namespace brq
             return [&]{ return std::move( p ); }();
     }
 
-    template< typename ptr_t, typename = void >
+    template< typename ptr_t, typename = std::enable_if_t< !std::is_same_v< ptr_t, void * > > >
     struct dereference
     {
         using type = decltype( *std::declval< ptr_t >() );
