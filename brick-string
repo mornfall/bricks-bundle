@@ -63,7 +63,7 @@ namespace brq
             return b << ( i == 0 ? "]" : " ]" );
     }
 
-    auto &operator<<( string_builder &b, const std::vector< bool > &t ) noexcept
+    inline auto &operator<<( string_builder &b, const std::vector< bool > &t ) noexcept
     {
         b << "⟨";
         for ( bool bit : t )
