@@ -713,7 +713,7 @@ namespace brq::numeric
 
             while ( nom_f > std::max( k, n - k ) )
             {
-                ASSERT_LEQ( denom_f, std::min( k, n - k ) );
+                ASSERT_LEQ( denom_f, k < n - k ? k : n - k );
                 r = r * nom_f;
                 ASSERT_EQ( r % denom_f, 0 );
                 r = r / denom_f;
