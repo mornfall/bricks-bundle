@@ -49,12 +49,13 @@ namespace brq
         }
     };
 
-    template< int i = 0, typename... T >
-    brq::string_builder &operator<<( string_builder &b, const std::tuple< T... > &t ) noexcept
+    template< int i = 0, typename... args_t >
+    auto operator<<( string_builder &b, const std::tuple< args_t... > &t ) noexcept
+        -> decltype(( ( b << std::declval< args_t >() ) << ... ))
     {
         if ( i == 0 )
             b << "[";
-        if constexpr ( i < sizeof...( T ) )
+        if constexpr ( i < sizeof...( args_t ) )
         {
             b << ( i > 0 ? ", " : " " ) << std::get< i >( t );
             return operator<<< i + 1 >( b, t );
