@@ -50,7 +50,7 @@ namespace brq
     };
 
     template< int i = 0, typename... T >
-    auto &operator<<( string_builder &b, const std::tuple< T... > &t ) noexcept
+    brq::string_builder &operator<<( string_builder &b, const std::tuple< T... > &t ) noexcept
     {
         if ( i == 0 )
             b << "[";
@@ -72,7 +72,7 @@ namespace brq
     }
 
     template< typename... T >
-    auto &operator<<( string_builder &b, const std::variant< T... > &v ) noexcept
+    brq::string_builder &operator<<( string_builder &b, const std::variant< T... > &v ) noexcept
     {
         return std::visit( [&]( const auto &val ) -> auto & { return b << val; }, v );
     }
