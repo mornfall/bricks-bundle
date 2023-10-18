@@ -446,7 +446,10 @@ namespace brq
         if ( a_str == a_name || !std::is_same_v< decltype( a_name ), const char * > )
         {
             b.rewind( item_start );
-            b << ( space ? " " : "" ) << BRICK_FORCE( std::get< 0 >( vals ) );
+            if constexpr ( requires { b << BRICK_FORCE( std::get< 0 >( vals ) ); } )
+                b << ( space ? " " : "" ) << BRICK_FORCE( std::get< 0 >( vals ) );
+            else
+                __builtin_trap();
             comma = false;
         }
         else
