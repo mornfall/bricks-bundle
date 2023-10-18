@@ -49,6 +49,34 @@ namespace brq
         }
     };
 
+    template< typename coll_t >
+    struct printable< coll_t, std::enable_if_t< !std::is_convertible_v< coll_t, std::string_view >,
+                                                std::void_t< typename coll_t::iterator > > >
+    {
+        const coll_t &col;
+        printable( const coll_t &c ) : col( c ) {}
+
+        friend auto &operator<<( brq::string_builder &b, const printable &a )
+        {
+            int i = 0;
+
+            if constexpr ( requires { a.col.size(); } )
+                for ( auto it = a.col.begin(); it != a.col.end(); ++it, ++i )
+                {
+                    if ( i < 16 )
+                        b << ( i ? ", " : "[ " ) << brq::printable( *it );
+                    else if ( i == 16 && a.col.size() > 24 )
+                        b << ", …";
+                    else if ( a.col.size() - i < 8 )
+                        b << ", " << brq::printable( *it );
+                }
+            else
+                return b << a.col;
+
+            return b << ( i ? " ]" : "[]" );
+        }
+    };
+
     template< int i = 0, typename... args_t >
     auto operator<<( string_builder &b, const std::tuple< args_t... > &t ) noexcept
         -> decltype(( ( b << std::declval< args_t >() ) << ... ))
