@@ -240,7 +240,7 @@ namespace brq
             {
                 using namespace std::literals;
 
-                std::tuple prefix{ "assert "sv, std::get< 0 >( names ),
+                std::tuple prefix{ "assert "sv, std::string_view( std::get< 0 >( names ) ),
                                    sizeof...( names_t ) > 1 ? ": "sv : ""sv };
 
                 trace_fn< trace_fmt::packed, trace_level::debug >
