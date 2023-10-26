@@ -437,7 +437,7 @@ namespace brq
     {
         parse_result r;
         r._err = true;
-        r._err_str = format( args... ).data();
+        r._err_str = brq::format( args... ).data();
         return r;
     }
 
