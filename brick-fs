@@ -662,6 +662,13 @@ namespace brq
             brq::raise< system_error >() << "moving " << src << " to " << dst;
     }
 
+    inline void link( std::string_view old_name, std::string_view new_name )
+    {
+        int res = ::link( c_str( old_name ), c_str( new_name ) );
+        if ( res == -1 )
+            brq::raise_sys() << "linking " << old_name << " to " << new_name;
+    }
+
     inline void unlink( std::string fname )
     {
 #ifdef _WIN32
