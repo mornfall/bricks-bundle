@@ -866,7 +866,7 @@ namespace brq
                 if ( name == "." || name == ".." )
                     continue;
 
-                auto path = join_path( root, name );
+                auto path = normalize_path( join_path( root, name ) );
                 auto st = follow ? stat( path ) : lstat( path );
 #ifdef _WIN32
                 if ( st && ( st->st_mode & _S_IFDIR ) )
