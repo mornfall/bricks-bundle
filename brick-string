@@ -28,6 +28,41 @@
 
 namespace brq
 {
+    template< typename val_t >
+    struct unquoted_ref
+    {
+        const val_t &ref;
+        unquoted_ref( val_t &r ) : ref( r ) {}
+
+        friend auto &operator<<( brq::string_builder &b, const unquoted_ref &r )
+        {
+            return b << r.ref;
+        }
+    };
+
+    template< typename val_t >
+    struct unquoted_val
+    {
+        val_t val;
+        unquoted_val( val_t v ) : val( std::move( v ) ) {}
+
+        friend auto &operator<<( brq::string_builder &b, const unquoted_val &v )
+        {
+            return b << v.val;
+        }
+    };
+
+    auto unquoted( auto &&rval )
+        requires std::is_rvalue_reference_v< decltype( rval ) >
+    {
+        return unquoted_val{ std::move( rval ) };
+    }
+
+    auto unquoted( const auto &ref )
+    {
+        return unquoted_ref{ ref };
+    }
+
     template< typename... args_t >
     struct printable< std::tuple< args_t... > >
     {
