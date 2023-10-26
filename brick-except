@@ -19,6 +19,7 @@
 #pragma once
 
 #include "brick-trace"
+#include "brick-assert"
 #include <stdexcept>
 #include <system_error>
 #include <tuple>
