@@ -40,7 +40,8 @@ namespace brq
 
         template< typename D, bool from_atomic,
                   typename = std::enable_if_t< std::is_convertible_v< D *, T * > > >
-        refcount_ptr( const refcount_ptr< D, from_atomic, static_allocator > &o ) noexcept
+        refcount_ptr( const refcount_ptr< D, from_atomic,
+                                          typename static_allocator::template rebind< D > > &o ) noexcept
             : refcount_ptr( o._ptr )
          {}
 
