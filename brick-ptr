@@ -211,6 +211,14 @@ namespace brq
         std::conditional_t< atomic, std::atomic< T >, T > _refcount = 0;
     };
 
+    template< typename T = uint16_t, bool atomic = false >
+    struct refcount_vbase : refcount_base< T, atomic >
+    {
+        virtual void ref_get() { return refcount_base< T, atomic >::ref_get(); }
+        virtual bool ref_put() { return refcount_base< T, atomic >::ref_put(); }
+        virtual ~refcount_vbase() = default;
+    };
+
     template< typename type, bool atomic = false,
               typename static_alloc = std_new< type >,
               typename... alloc_args_t, typename... args_t >
