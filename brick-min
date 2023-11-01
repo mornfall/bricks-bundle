@@ -424,6 +424,7 @@ namespace brq
     {
         std::string_view s;
         printable( std::string_view s ) : s( s ) {}
+        printable( const char *s ) : s( s ?: "" ) {}
 
         bool operator==( const printable & ) const = default;
 
