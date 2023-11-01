@@ -519,7 +519,14 @@ namespace brq
         bool _owned = false;
 
         c_str( const c_str & ) = delete;
-        c_str( const c_str && ) = delete;
+        c_str( c_str &&o )
+            : _data( o._data ), _owned( o._owned )
+        {
+            o._owned = false;
+        }
+
+        c_str &operator=( const c_str & ) = delete;
+        c_str &operator=( c_str && ) = delete;
 
         explicit c_str( std::string_view sv )
         {
