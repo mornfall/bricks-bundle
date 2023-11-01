@@ -108,7 +108,8 @@ namespace brq
     {
         using fun = std::function< void() >;
         fun _fun;
-        finally( fun f ) : _fun( f ) {}
+        template< typename fun_t >
+        finally( fun_t f ) : _fun( f ) {}
         ~finally() { if ( _fun ) _fun(); }
         void skip() { _fun = fun(); }
     };
