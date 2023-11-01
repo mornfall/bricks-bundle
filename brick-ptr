@@ -33,6 +33,10 @@ namespace brq
 
         using rawptr_t = typename static_allocator::pointer;
 
+        template< typename target_t, bool as_atomic = atomic >
+        using rebind_t = refcount_ptr< target_t, as_atomic,
+                                       typename static_allocator::template rebind< target_t > >;
+
         refcount_ptr() noexcept : _ptr( rawptr_t() ) {}
         refcount_ptr( const refcount_ptr &o ) noexcept : refcount_ptr( o._ptr ) {}
         explicit refcount_ptr( rawptr_t v ) noexcept : _ptr( v ) { _get(); }
@@ -40,10 +44,15 @@ namespace brq
 
         template< typename D, bool from_atomic,
                   typename = std::enable_if_t< std::is_convertible_v< D *, T * > > >
-        refcount_ptr( const refcount_ptr< D, from_atomic,
-                                          typename static_allocator::template rebind< D > > &o ) noexcept
+        refcount_ptr( const rebind_t< D, from_atomic > &o ) noexcept
             : refcount_ptr( o._ptr )
-         {}
+        {}
+
+        template< typename target_t >
+        rebind_t< target_t > dyn_cast()
+        {
+            return rebind_t< target_t >( dynamic_cast< target_t * >( ptr() ) );
+        }
 
         ~refcount_ptr() noexcept { _put( ptr() ); }
         rawptr_t operator->() const noexcept { return _ptr; }
