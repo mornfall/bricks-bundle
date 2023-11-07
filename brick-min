@@ -42,6 +42,11 @@ namespace brq
 
     inline unit_t unit;
 
+    struct vbase
+    {
+        virtual ~vbase() noexcept( false ) = default;
+    };
+
     struct fallback
     {
         template< typename T >
