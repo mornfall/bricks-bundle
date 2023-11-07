@@ -9,7 +9,7 @@ namespace brq
 {
     struct precondition_failed : std::exception {};
 
-    void precondition( bool x )
+    inline void precondition( bool x )
     {
         if ( !x )
             throw precondition_failed{};
@@ -80,7 +80,7 @@ namespace brq
         return p;
     }
 
-    std::type_index except_type( std::exception_ptr eptr )
+    inline std::type_index except_type( std::exception_ptr eptr )
     {
         try
         {
@@ -95,7 +95,7 @@ namespace brq
         return typeid( nullptr );
     }
 
-    bool except_type_eq( std::exception_ptr a_ptr, std::exception_ptr b_ptr )
+    inline bool except_type_eq( std::exception_ptr a_ptr, std::exception_ptr b_ptr )
     {
         if ( !a_ptr && !b_ptr )
             return true;
@@ -180,7 +180,7 @@ namespace brq
         }
     };
 
-    constexpr int timeout_factor = 50;
+    inline constexpr int timeout_factor = 50;
 
     template< typename retval_t, typename... args_t >
     struct fcmp_result : fcmp_base
@@ -236,14 +236,14 @@ namespace brq
         }
     };
 
-    void fcmp_itimer( int64_t usec )
+    inline void fcmp_itimer( int64_t usec )
     {
         struct ::itimerval stop{};
         stop.it_value.tv_usec = usec;
         setitimer( ITIMER_VIRTUAL, &stop, nullptr );
     }
 
-    int64_t fcmp_clock()
+    inline int64_t fcmp_clock()
     {
         struct ::timespec now;
 

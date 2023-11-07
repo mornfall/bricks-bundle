@@ -41,9 +41,9 @@ namespace brq::enumerate
         return find_block_gen( index, std::tuple{ block }, size, []( auto &b ) { ++ b; } );
     }
 
-    nat nat_enum( nat index ) { return index; }
+    inline nat nat_enum( nat index ) { return index; }
 
-    int integer( nat index )
+    inline int integer( nat index )
     {
         return index % 2 == 0 ? index.short_digit() / 2 : -index.short_digit() / 2;
     }
@@ -122,7 +122,7 @@ namespace brq::enumerate
             return std::get< i >( bounds ) * tuple_bound< i + 1 >( bounds );
     }
 
-    auto tuple_item( nat b, nat index, int i, int d, nat item_bound = 0 )
+    inline auto tuple_item( nat b, nat index, int i, int d, nat item_bound = 0 )
     {
         if ( i == d )
             return std::pair{ index, b };
@@ -208,12 +208,12 @@ namespace brq::enumerate
         return tuple_param< n >( b, index, bounds );
     }
 
-    nat list_count( nat n )
+    inline nat list_count( nat n )
     {
         return n <= 1 ? n + 1 : ( n.pow( n + 1 ) - 1 ) / ( n - 1 ); /* ∑₀ᵏnᵏ */
     };
 
-    auto list_param( nat b, int n, nat index, int d = 0 )
+    inline auto list_param( nat b, int n, nat index, int d = 0 )
     {
         std::vector< nat > r( n );
         std::tie( index, d ) = tuple_block( b, n, index );
@@ -224,7 +224,7 @@ namespace brq::enumerate
         return r;
     }
 
-    auto list( nat index, nat bound = 0 )
+    inline auto list( nat index, nat bound = 0 )
     {
         nat b_idx, b_skip;
         int d = 0;
@@ -254,7 +254,7 @@ namespace brq::enumerate
         return r;
     }
 
-    auto set_param( nat b, nat n, nat index )
+    inline auto set_param( nat b, nat n, nat index )
     {
         std::vector< nat > r;
 
@@ -277,7 +277,7 @@ namespace brq::enumerate
         return r;
     }
 
-    auto set( nat index )
+    inline auto set( nat index )
     {
         std::vector< nat > r;
 
@@ -296,12 +296,12 @@ namespace brq::enumerate
         return r;
     }
 
-    nat map_count( nat b, int n )
+    inline nat map_count( nat b, int n )
     {
         return comb( b, n ) * tuple_count( b, n );
     }
 
-    auto map( nat index )
+    inline auto map( nat index )
     {
         auto update_count = []( auto &b, auto &n ) { if ( b == n ) n = 1, ++ b; else ++ n; };
         int b, n;
@@ -326,7 +326,7 @@ namespace brq::enumerate
         return r;
     }
 
-    auto permutation_param( int n, nat index )
+    inline auto permutation_param( int n, nat index )
     {
         std::vector< nat > result( n );
         std::iota( result.begin(), result.end(), 0 );
@@ -342,7 +342,7 @@ namespace brq::enumerate
         return result;
     }
 
-    auto permutation( nat index )
+    inline auto permutation( nat index )
     {
         int n = 0;
         nat count = 1;
@@ -509,7 +509,7 @@ namespace brq::enumerate
         return mk< T >::get( index );
     }
 
-    auto graph( nat index ) /* unorientend */
+    inline auto graph( nat index ) /* unorientend */
     {
         std::vector< std::pair< nat, nat > > graph;
 
@@ -579,10 +579,10 @@ namespace brq::enumerate
 namespace brq
 {
     template< int n > auto tuple_enum( nat index ) { return enumerate::tuple< n >( index ); }
-    auto list_enum( nat index ) { return enumerate::list( index ); }
-    auto set_enum( nat index ) { return enumerate::set( index ); }
-    auto map_enum( nat index ) { return enumerate::map( index ); }
-    auto int_enum( nat index ) { return enumerate::integer( index ); }
+    inline auto list_enum( nat index ) { return enumerate::list( index ); }
+    inline auto set_enum( nat index ) { return enumerate::set( index ); }
+    inline auto map_enum( nat index ) { return enumerate::map( index ); }
+    inline auto int_enum( nat index ) { return enumerate::integer( index ); }
 
     template< typename T >
     auto enum_gen( nat index ) { return enumerate::generic< T >( index ); }
