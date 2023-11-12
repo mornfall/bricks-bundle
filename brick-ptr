@@ -31,7 +31,7 @@ namespace brq
         T *ptr;
         bool placed = false;
 
-        unique_ptr( T *raw, bool placed = false ) : ptr( raw ), placed( placed ) {}
+        unique_ptr( T *raw = nullptr, bool placed = false ) : ptr( raw ), placed( placed ) {}
         unique_ptr( const unique_ptr & ) = delete;
         unique_ptr( unique_ptr &&o ) : ptr( o.ptr ), placed( o.placed )
         {
@@ -45,14 +45,24 @@ namespace brq
             ptr = o.ptr;
             placed = o.placed;
             o.ptr = nullptr;
+            return *this;
         }
+
+        auto operator->() const { return ptr; }
+        decltype( auto ) operator*() const { return *ptr; }
+        explicit operator bool() const { return ptr; }
 
         void destroy()
         {
+            if ( !ptr )
+                return;
+
             if ( placed )
                 ptr->~T();
             else
                 delete ptr;
+
+            ptr = nullptr;
         }
 
         ~unique_ptr() noexcept( noexcept( ptr->~T() ) )
