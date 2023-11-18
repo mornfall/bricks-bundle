@@ -104,14 +104,12 @@ namespace brq
         return { args... };
     }
 
+    template< typename fun_t >
     struct finally
     {
-        using fun = std::function< void() >;
-        fun _fun;
-        template< typename fun_t >
+        fun_t _fun;
         finally( fun_t f ) : _fun( f ) {}
-        ~finally() { if ( _fun ) _fun(); }
-        void skip() { _fun = fun(); }
+        ~finally() noexcept( noexcept( _fun() ) ) { _fun(); }
     };
 
     struct terminate_guard
