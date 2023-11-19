@@ -70,7 +70,7 @@ namespace brq
             int raw = ::open( args... );
 
             if ( raw < 0 )
-                raise< system_error >() << "error opening file" << brq::format( args... );
+                raise_sys() << "error opening file" << brq::format( args... );
             else
                 return from_raw( raw );
         }
@@ -1018,10 +1018,18 @@ namespace brq
     inline std::string read_file( std::string_view file,
                                   size_t length = std::numeric_limits< size_t >::max() )
     {
-        std::ifstream in( c_str( file ), std::ios::binary );
-        if ( !in.is_open() )
-            brq::raise() << "reading file " << file;
-        return read_file( in, length );
+        std::string buffer;
+        auto fd = unique_fd::open( c_str( file ), O_RDONLY );
+        buffer.resize( fd.seek( 0, SEEK_END ) );
+        int count = ::pread( fd.number(), buffer.data(), buffer.size(), 0 );
+
+        if ( count == -1 )
+            raise_sys() << "reading " << file;
+        if ( count != buffer.size() )
+            raise() << "got " << count << " but expected " << buffer.size()
+                    << " bytes reading " << file;
+
+        return buffer;
     }
 
     inline std::string read_file_or( std::string_view file, std::string_view def,
@@ -1042,12 +1050,13 @@ namespace brq
 
     inline void write_file( std::string_view file, std::string_view data )
     {
-        std::ofstream out( std::string( file ), std::ios::binary );
-        if ( !out.is_open() )
-            brq::raise< system_error >() << "writing file " << file;
-        out << data;
-        if ( !out.good() )
-            brq::raise< system_error >() << "writing data to file " << file;
+        auto fd = unique_fd::open( c_str( file ), O_CREAT | O_TRUNC | O_WRONLY, 0666 );
+        int count = ::write( fd.number(), data.data(), data.size() );
+
+        if ( count == -1 )
+            brq::raise_sys() << "writing " << file;
+        if ( count < data.size() )
+            brq::raise() << "unexpected short write writing " << file;
     }
 
 #ifdef _WIN32
