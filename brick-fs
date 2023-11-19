@@ -73,6 +73,8 @@ namespace brq
                 raise_sys() << "error opening file" << brq::format( args... );
             else
                 return from_raw( raw );
+
+            __builtin_trap();
         }
 
         static unique_fd dup( int n )
