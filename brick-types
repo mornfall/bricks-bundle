@@ -1598,7 +1598,7 @@ struct OverloadedTest {
     TEST(basic) {
         auto x = overloaded( []( int x ) { return x + 1; } )( 0 );
         ASSERT_EQ( x, 1 );
-        ASSERT( std::is_same< decltype( x ), int >::value );
+        ASSERT(( std::is_same< decltype( x ), int >::value ));
 
         auto f = overloaded( []( int ) -> int { return 0; },
                              []( long ) -> long { return 1; },
@@ -1607,9 +1607,9 @@ struct OverloadedTest {
         ASSERT_EQ( f( long( 0 ) ), 1 );
         ASSERT_EQ( f( short( 0 ) ), 2 );
 
-        ASSERT( std::is_same< decltype( f( int( 0 ) ) ), int >::value );
-        ASSERT( std::is_same< decltype( f( long( 0 ) ) ), long >::value );
-        ASSERT( std::is_same< decltype( f( short( 0 ) ) ), short >::value );
+        ASSERT(( std::is_same< decltype( f( int( 0 ) ) ), int >::value ));
+        ASSERT(( std::is_same< decltype( f( long( 0 ) ) ), long >::value ));
+        ASSERT(( std::is_same< decltype( f( short( 0 ) ) ), short >::value ));
     }
 
     TEST(cast) {
@@ -1681,7 +1681,7 @@ struct MatchTest {
         auto x = match( v, [&m]( int ) { m = 1; ASSERT( false ); },
                            [&m]( std::string &x ) { m = 2; ASSERT_EQ( x, "ahoj"s ); } );
         ASSERT_EQ( m, 2 );
-        ASSERT( std::is_same< decltype( x ), bool >::value );
+        ASSERT(( std::is_same< decltype( x ), bool >::value ));
         ASSERT( x );
 
         m = 0;
