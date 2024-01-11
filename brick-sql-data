@@ -487,7 +487,7 @@ namespace brq::sql
         template< typename self_t >
         static std::string_view declare( const self_t &self )
         {
-            static std::string decl( format( "\"", sql::get_name( self ), "\"" ).data() );
+            static std::string decl( brq::format( "\"", sql::get_name( self ), "\"" ).data() );
             return decl;
         }
     };
@@ -751,8 +751,8 @@ namespace brq::sql
 
         auto [ schema ] = txn.template select< current_schema >().exec().result();
 
-        auto token   = format( v.get_name( v ), "_token" ),
-             refresh = format( v.get_name( v ), "_refresh" );
+        auto token   = brq::format( v.get_name( v ), "_token" ),
+             refresh = brq::format( v.get_name( v ), "_refresh" );
 
         txn.exec() << "drop table if exists " << token;
         txn.exec() << "create table " << token << " ( token ) as select " << q_str;

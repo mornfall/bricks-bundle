@@ -275,8 +275,8 @@ namespace brq
     inline std::string replace_extension( std::string_view path, std::string_view extension )
     {
         if ( !extension.empty() && extension[0] == '.' )
-            return format( drop_extension( path ), extension ).buffer();
-        return format( drop_extension( path ), ".", extension ).buffer();
+            return brq::format( drop_extension( path ), extension ).buffer();
+        return brq::format( drop_extension( path ), ".", extension ).buffer();
     }
 
     inline split_view split_filename( std::string_view path )
@@ -605,7 +605,7 @@ namespace brq
         for ( auto &x : split )
         {
             todo.emplace_back( x );
-            mkdir_if_missing( format( abs.first, join_path( todo ) ).data(), mode );
+            mkdir_if_missing( brq::format( abs.first, join_path( todo ) ).data(), mode );
         }
     }
 

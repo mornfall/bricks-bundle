@@ -619,7 +619,7 @@ namespace brq
             if ( !h._cmd.empty() && !matches )
             {
                 help_commands< cmds_t... >();
-                return cmd_help( _help.data(), format( "unknown command ", h._cmd ) );
+                return cmd_help( _help.data(), brq::format( "unknown command ", h._cmd ) );
             }
 
             return cmd_help( _help.data() );
