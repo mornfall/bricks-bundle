@@ -94,6 +94,8 @@ namespace brq
     template< typename ptr_t >
     using dereference_t = typename dereference< ptr_t >::type;
 
+    constexpr inline std::string_view hex_digit = "0123456789abcdef";
+
     /* A simple string builder, similar to std::stringstream but much lighter.
      * Only works with 8-bit characters (i.e. no wchar_t or char32_t). Provides
      * a basic selection of formatting operators. To provide formatting
@@ -361,8 +363,6 @@ namespace brq
             print_to_chars( val, primary );
             return *this;
         }
-
-        static constexpr std::string_view hex_digit = "0123456789abcdef";
 
         void print_char( char c )
         {
