@@ -413,13 +413,14 @@ namespace brq
         cmd_help( std::string_view s = "", std::string_view err = "" ) : _help( s ), _error( err ) {}
     };
 
+
+    template< typename cmd_t >
+    std::string cmd_name( cmd_t & ) { return names< cmd_t >( brq::primary )[ 0 ]; }
+
     struct cmd_option_parser : protected cmd_options
     {
         std::string _argv_0;
         std::string_view _cmd_help;
-
-        template< typename cmd_t >
-        std::string cmd_name( cmd_t & ) { return names< cmd_t >( brq::primary )[ 0 ]; }
 
         template< typename cmd_t >
         string_builder &format_help( cmd_t &c, bool synopsis_only )
