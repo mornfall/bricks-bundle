@@ -316,11 +316,20 @@ namespace brq
             }
         }
 
+        template< typename noncontainer, typename = void >
+        struct value_type_or
+        { using type = noncontainer; };
+
+        template< typename container >
+        struct value_type_or < container, std::void_t< typename container::value_type > >
+        { using type = typename container::value_type; };
+
         template< typename type >
         void collect( type &s )
         {
+            using vt = typename value_type_or< type >::type ;
             if ( _mode == mode_pos_help )
-                _pos_help << " {" << names< type >( brq::primary )[ 0 ] << "}*";
+                _pos_help << " {" << names< vt >( brq::primary )[ 0 ] << "}*";
 
             if ( _pos != _pos_matched )
                 return;
