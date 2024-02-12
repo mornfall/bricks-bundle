@@ -138,6 +138,8 @@ namespace brq
 
             if ( _exact && pattern != token )
                 return { false, 0, 0 };
+            if ( !_exact && ( token == "-" || token == "--" ) )
+                return { false, 0, 0 };
             if ( pattern.size() <= 2 && token.size() > pattern.size() ) // -o
                 return { brq::starts_with( token, pattern ), idx, off + pattern.size() };
             if ( std::isalpha( pattern.back() ) || std::isblank( pattern.back() ) )
