@@ -579,10 +579,10 @@ namespace brq::enumerate
 namespace brq
 {
     template< int n > auto tuple_enum( nat index ) { return enumerate::tuple< n >( index ); }
-    inline auto list_enum( nat index ) { return enumerate::list( index ); }
-    inline auto set_enum( nat index ) { return enumerate::set( index ); }
-    inline auto map_enum( nat index ) { return enumerate::map( index ); }
-    inline auto int_enum( nat index ) { return enumerate::integer( index ); }
+    auto list_enum( nat index ) { return enumerate::list( index ); }
+    auto set_enum( nat index ) { return enumerate::set( index ); }
+    auto map_enum( nat index ) { return enumerate::map( index ); }
+    auto int_enum( nat index ) { return enumerate::integer( index ); }
 
     template< typename T >
     auto enum_gen( nat index ) { return enumerate::generic< T >( index ); }
