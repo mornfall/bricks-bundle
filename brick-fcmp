@@ -204,15 +204,15 @@ namespace brq
             if ( r.f.args != r.g.args )
             {
                 b << "output arguments:\n"
-                  << "  expected: " << r.f.args << "\n"
-                  << "  actual:   " << r.g.args << "\n";
+                  << "  expected: " << abbreviate( r.f.args ) << "\n"
+                  << "  actual:   " << abbreviate( r.g.args ) << "\n";
             }
 
             if ( r.f.retval != r.g.retval )
             {
                 b << "return value:\n"
-                  << "  expected: " << r.f.retval << "\n"
-                  << "  actual:   " << r.g.retval << "\n";
+                  << "  expected: " << abbreviate( r.f.retval ) << "\n"
+                  << "  actual:   " << abbreviate( r.g.retval ) << "\n";
             }
 
             if ( r.f.nsec * timeout_factor <= r.g.nsec )
