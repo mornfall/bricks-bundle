@@ -128,7 +128,7 @@ namespace brq
 
         friend auto &operator<<( brq::string_builder &b, const abbreviate &a )
         {
-            return b << a.e;
+            return brq::format_nofail( b, a.e );
         }
     };
 
