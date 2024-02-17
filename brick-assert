@@ -250,7 +250,7 @@ namespace brq
                 );
             }
 
-            if ( auto val = BRICK_FORCE( std::get< 0 >( vals ) ); !val )
+            if ( auto &&val = BRICK_FORCE( std::get< 0 >( vals ) ); !val )
             {
                 assert_failed f( l );
                 trace_format< trace_fmt::named, trace_level::debug >
