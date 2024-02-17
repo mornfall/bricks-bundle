@@ -415,7 +415,7 @@ namespace brq
 
 
     template< typename cmd_t >
-    std::string cmd_name( cmd_t & ) { return names< cmd_t >( brq::primary )[ 0 ]; }
+    std::string cmd_name( cmd_t & ) { return cmd_option_help::names< cmd_t >( brq::primary )[ 0 ]; }
 
     struct cmd_option_parser : protected cmd_options
     {
