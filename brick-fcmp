@@ -116,7 +116,7 @@ namespace brq
     {
         std::tuple< args_t... > args;
         std::exception_ptr except;
-        retval_t retval;
+        retval_t retval{};
         int64_t nsec;
     };
 
