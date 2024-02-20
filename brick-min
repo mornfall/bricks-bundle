@@ -27,6 +27,7 @@
 #include <charconv>
 #include <utility>
 #include <tuple>
+#include <iosfwd>
 
 #ifndef __inline_opt
 #define __inline_opt
@@ -146,6 +147,10 @@ namespace brq
         char *buffer_end() noexcept { return _d.buffer + _d.capacity - 1; }
         const char *buffer() const noexcept { return _d.buffer ? _d.buffer : ""; }
         std::string_view data() const noexcept { return std::string_view( _d.buffer, _d.offset ); }
+
+        template< typename char_t = char >
+        auto str() const { return std::basic_string< char_t >( data() ); }
+
         operator std::string_view() const noexcept { return data(); }
         int size() const noexcept { return _d.offset; }
         int rewind( int x ) noexcept { int rv = _d.offset; _d.offset = x; return rv; }
