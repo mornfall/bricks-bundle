@@ -189,6 +189,7 @@ namespace brq
                 name = strchr( dem, ':' ) ? strrchr( dem, ':' ) + 1 : dem;
                 if ( name == "basic_string" )
                     name = "string";
+                std::free( dem );
             }
             return { b + name + e };
         }
