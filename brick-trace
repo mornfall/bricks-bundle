@@ -490,10 +490,13 @@ namespace brq
 
         if ( trace()._use_buffer )
         {
-            trace()._buffer.rotate( 1024 * 1024, 2 * 1024 * 1024 );
-            trace()._buffer << trace_indent_buffer.begin();
-            eptr = trace_format< fmt, level >( trace()._buffer, names, vals );
-            trace()._buffer << "\n";
+            if ( trace().enabled( level, location ) )
+            {
+                trace()._buffer.rotate( 1024 * 1024, 2 * 1024 * 1024 );
+                trace()._buffer << trace_indent_buffer.begin();
+                eptr = trace_format< fmt, level >( trace()._buffer, names, vals );
+                trace()._buffer << "\n";
+            }
         }
         else if ( trace().prepare( builder, level, location ) )
         {
