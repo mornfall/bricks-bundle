@@ -123,6 +123,7 @@
 #define DEBUGX(...) BRICK_TRACE( ::brq::trace_fmt::named,  ::brq::trace_level::debug, __VA_ARGS__ )
 #define DEBUG(...)  BRICK_TRACE( ::brq::trace_fmt::spaced, ::brq::trace_level::debug, __VA_ARGS__ )
 #define INFO(...)   BRICK_TRACE( ::brq::trace_fmt::raw,    ::brq::trace_level::info,  __VA_ARGS__ )
+#define INFO_(...)  BRICK_TRACE( ::brq::trace_fmt::packed, ::brq::trace_level::info,  __VA_ARGS__ )
 #define WARN(...)   BRICK_TRACE( ::brq::trace_fmt::raw,    ::brq::trace_level::warn,  __VA_ARGS__ )
 #define ERROR(...)  BRICK_TRACE( ::brq::trace_fmt::raw,    ::brq::trace_level::error, __VA_ARGS__ )
 
