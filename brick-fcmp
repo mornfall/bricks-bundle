@@ -190,11 +190,15 @@ namespace brq
 
         bool is_match() const override
         {
-            return g.args == f.args &&
-                   g.retval == f.retval &&
-                   g.nsec < timeout_factor * f.nsec &&
-                   except_type_eq( g.except, f.except );
+            return except_type( f.except ) == typeid( precondition_failed ) ||
+            (
+                g.args == f.args &&
+                g.retval == f.retval &&
+                g.nsec < timeout_factor * f.nsec &&
+                except_type_eq( g.except, f.except )
+            );
         }
+
 
         friend brq::string_builder &operator<<( brq::string_builder &b, const fcmp_result &r )
         {
@@ -278,6 +282,12 @@ namespace brq
         TRACE( input_args );
 
         fcmp_call( f, r.f.args, r.f.retval, r.f.except, r.f.nsec );
+
+        if ( except_type( r.f.except ) == typeid( precondition_failed ) )
+        {
+            TRACE( "precondition failed" );
+            return r;
+        }
 
         int retry = 3;
         do
