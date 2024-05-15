@@ -251,7 +251,7 @@ namespace brq
 
             close( listen_fd );
             int status;
-            trace_dump( 2 );
+            trace_dump();
             waitpid( pid, &status, 0 );
 
             if ( WIFEXITED( status ) )
@@ -548,7 +548,7 @@ namespace brq
 
     inline void trace_sighandler( int sig, siginfo_t *, void * )
     {
-        trace_dump( 2 );
+        trace_dump();
         for ( auto s : trace_siglist )
             sigaction( s, trace_prevsig + s, nullptr );
         raise( sig );
